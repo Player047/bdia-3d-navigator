@@ -150,6 +150,12 @@ if ($DistributionId) {
   Say '  失效 CloudFront 缓存'
   $paths = @('/index.html', '/client/index.html', '/client/api/data.json')
   if ($InvalidateAll) { $paths = @('/*') }
+  elseif ($prefixClean) {
+    # ★ 失效路径必须是【站点里真实的键】，要带上前缀。
+    #   只失效 /index.html 的话，部署在 /BDIA-3D-Navigator/ 下的站点一条都没被清到，
+    #   而且命令照样返回成功 —— 表现是「部署了但线上没变」。
+    $paths = $paths | ForEach-Object { "/$prefixClean$_" }
+  }
   $inv = & aws cloudfront create-invalidation --distribution-id $DistributionId --paths @paths @dry @awsCommon --output json
   if ($LASTEXITCODE -ne 0) { Fail '创建失效任务失败' }
   Ok "$($paths -join ' ') 已提交失效"

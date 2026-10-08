@@ -20,6 +20,7 @@
     "test:editor": "node tools/editor-pick.mjs && node tools/editor-e2e.mjs",
     "build:static": "node tools/build-static.mjs",
     "test:static": "node tools/static-parity.mjs && node tools/static-http-selftest.mjs",
+    "check:live": "node tools/static-live-check.mjs",
     "preview:static": "node tools/serve-static.mjs",
     "test": "node tools/validate.mjs && npm run test:model && npm run test:client && npm run test:vertical && npm run test:editor"
   }

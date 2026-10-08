@@ -162,3 +162,56 @@ npm run preview:static      # 默认 http://127.0.0.1:8080/client/index.html
 - 缓存策略与部署一致（能提前撞上「数据被缓存住」）
 
 也可以在开发服务器里直接看客户端（数据和编辑器同一份）：`npm run editor` → `http://127.0.0.1:5173/client/`
+
+---
+
+## 6. 部署之后：核对线上
+
+前两套（`test:static`）验的都是**本地**。线上有它自己的一整套坑：上传工具猜错了
+Content-Type（尤其 `.mjs`）、漏传了某个文件、传上去的其实是**上一次**的构建、
+缓存头没设。这些本地全绿也照样发生。
+
+```bash
+npm run check:live -- --url https://player047.site/projects/BDIA-3D-Navigator/
+```
+
+它把线上每个文件的字节取回来，和本地构建产物逐个比对，并检查：
+
+| 组 | 查什么 |
+|---|---|
+| ① 全量比对 | 本地每个文件线上都取得到，且**字节完全相同**（抓「漏传」和「传的是旧构建」） |
+| ② 模块 MIME | 每个 `.js` / `.mjs` 的 Content-Type 都是 JavaScript —— 错了浏览器直接拒绝执行 |
+| ③ 缓存头 | `client/api/data.json` 是 `no-cache` 一类（否则改了数据线上还是旧的） |
+| ④ 数据 | 载荷能解析、非空、数量和 `build-manifest.json` 对得上 |
+| ⑤ shim 落点 | 按 `static-api.js` 自己的规则算出数据地址，确认那个地址真的取得到 —— **部署到子路径时最容易在这里出问题** |
+
+### 子路径部署的注意点
+
+本站部署在 `https://player047.site/projects/BDIA-3D-Navigator/` 这样的**子路径**下。
+`static-api.js` 的数据地址是**相对它自己的 URL** 算出来的，所以子路径天然成立 ——
+第 ⑤ 组就是专门钉这一条的。
+
+但**入口必须写全文件名**：
+
+```
+✅ https://player047.site/projects/BDIA-3D-Navigator/index.html        （跳转页）
+✅ https://player047.site/projects/BDIA-3D-Navigator/client/index.html （客户端）
+❌ https://player047.site/projects/BDIA-3D-Navigator/                  （403/404）
+```
+
+S3 不做目录索引，CloudFront 的 Default root object 也只作用于分发根路径。
+想要短地址就加一个 CloudFront Function（片段见站点 README 第 3.3 节）。
+
+### 改了东西之后
+
+```bash
+npm run build:static     # 重新构建
+# 上传（见站点目录的 deploy.ps1，或用 rclone）
+npm run check:live -- --url <你的地址>
+```
+
+如果 HTML 和数据设了 `no-cache`，改完上传即可生效；否则还需要一次 CloudFront 失效：
+
+```bash
+aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
+```

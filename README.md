@@ -61,6 +61,8 @@ npm test                # 全部：数据校验 + 模型 + 客户端 + 跨层 + 
 npm run build:static    # 生成 ../BDIA-3D-Navigator/，可直接部署
 npm run test:static     # 验证「静态客户端 == 开发客户端」
 npm run preview:static  # 本地起一个和 CloudFront 行为一致的静态服务器
+npm run check:live      # 核对【已经部署出去的】站点是否就是本地构建的那一份
+                        #   --url https://player047.site/projects/BDIA-3D-Navigator/
 ```
 
 **静态部署** → [docs/STATIC-DEPLOY.md](docs/STATIC-DEPLOY.md)
@@ -189,6 +191,7 @@ projects/bdia-nav/
 │   ├── static-parity.mjs        ★ 验证「静态客户端 == 开发客户端」
 │   ├── static-boot.mjs          无头启动真客户端，产出行为指纹
 │   ├── static-http-selftest.mjs 走真实 HTTP 查部署可用性（MIME / 缓存头 / 入口）
+│   ├── static-live-check.mjs    ★ 核对线上站点与本地构建产物逐字节相同
 │   ├── serve-static.mjs         本地静态预览（模拟 S3 + CloudFront）
 │   └── static/                  静态站点模板（shim / 部署脚本 / 站点 README）
 │
@@ -277,6 +280,7 @@ npm test    # 五套一起跑
 | `test:vertical` | **跨层设施**：楼层成员一致性、坐标必须跨层重合、接不上本层路网 |
 | `test:editor` | **编辑器**：跨层拾取对话框（`editor-pick`）+ 模块依赖图与 API 冒烟（`editor-e2e`） |
 | `test:static` | **静态站点**：语义一致性（文件逐字节 + 依赖图 + 数据逐字节 + 客户端行为指纹）+ 部署可用性（走真实 HTTP 查入口、MIME、缓存头、泄漏） |
+| `check:live` | **线上核对**：把已部署站点的每个文件取回来，和本地构建产物逐字节比对。抓「上传工具猜错 MIME」「漏传文件」「传的是旧的一次构建」 |
 
 `test:static` 只有在构建过静态站点之后才有意义（先 `npm run build:static`），
 所以不在 `npm test` 里。
