@@ -10,15 +10,25 @@
 
 | 阶段 | 状态 |
 |---|---|
-| **0. 数据地基**：schema + 校验器 + 示例楼层 | ✅ 完成（本目录） |
-| 1. 画一层真实数据，跑通 点→点→路径→指令 | ⬜ 下一步 |
-| 2. 3D 可视化 + 相机状态机 + 分步交互 | ⬜ |
-| 3. 加第二层，验证跨层寻路 | ⬜ |
-| 4. 铺全楼层数据 | ⬜ |
-| 5. AWS 部署上线 | ⬜ |
+| **0. 数据地基**：schema + 校验器 + 示例楼层 | ✅ 完成 |
+| 1. 画一层真实数据，跑通 点→点→路径→指令 | ✅ |
+| 2. 3D 可视化 + 相机状态机 + 分步交互 | ✅ |
+| 3. 加第二层，验证跨层寻路 | 🟡 数据有 L1F–L4F，跨层还有接不上的电梯口 |
+| 4. 铺全楼层数据 | 🟡 L1F / L4F / B1 / L5F 还没画通行线 |
+| 5. 部署上线 | 🟡 静态客户端可部署（S3 + CloudFront，见 [docs/STATIC-DEPLOY.md](docs/STATIC-DEPLOY.md)）；服务端接口未接 |
 | 6. 接航班动态 / 实时排队 | ⬜ |
 
-**⚠️ 现有几何全部是示意数据**（`_example: true`），只用于验证数据格式和校验器。必须以官方平面图为参考重绘。
+**⚠️ 数据仍在绘制中，`npm run validate` 目前不是全绿。** 当前 ERROR 主要集中在三类：
+坐标疑似写成了经纬度（`E_COORD_LOOKS_LIKE_LONLAT`）、不同隔离区的通行线相互接触
+（`E_PATH_TOUCHES_OTHER_ZONE`，等于绕过了安检）、以及设施接不上路网
+（`E_POI_NOT_ON_PATH` / `E_AREA_NOT_ON_PATH`）。跑一次 `npm run validate` 看完整清单 ——
+每条都带定位和修法。
+
+因此 **`npm test` 目前会在第一套（数据校验）就停下**。只想跑其余几套：
+
+```bash
+npm run test:model && npm run test:client && npm run test:vertical && npm run test:editor
+```
 
 ---
 
@@ -45,14 +55,21 @@ npm run validate:json   # 机器可读，给 CI 用
 npm run check           # strict 模式：WARN 也算失败
 
 # ── 测试 ──
-npm test                # 五套：数据校验 + 校验器自测 + 编辑器自测 + 启动冒烟 + 端到端
+npm test                # 全部：数据校验 + 模型 + 客户端 + 跨层 + 编辑器
+
+# ── 静态站点（S3 + CloudFront）──
+npm run build:static    # 生成 ../BDIA-3D-Navigator/，可直接部署
+npm run test:static     # 验证「静态客户端 == 开发客户端」
+npm run preview:static  # 本地起一个和 CloudFront 行为一致的静态服务器
 ```
+
+**静态部署** → [docs/STATIC-DEPLOY.md](docs/STATIC-DEPLOY.md)
 
 **怎么画？看 → [docs/DRAWING-GUIDE.md](docs/DRAWING-GUIDE.md)**
 
 数据模型细节 → [docs/DATA-SCHEMA.md](docs/DATA-SCHEMA.md)
 
-当前状态：**ERROR 0 · WARN 31 · INFO 2** —— 31 条 WARN 全部是「楼层尚未绘制」的预期提示。
+数据当前状态以 `npm run validate` 的输出为准（见上方「当前进度」）。
 
 ---
 
@@ -128,12 +145,22 @@ projects/bdia-nav/
 │   ├── facilities.geojson       ★ 设施：唯一的实体，几何是 Point 或 Polygon
 │   │                              店铺、休息室、卫生间是面；登机口、饮水、充电是点
 │   ├── obstacles.geojson        ★ 障碍物：柱子/柜台/设备。不是设施，没名字没类别
-│   ├── zones.geojson              隔离区面（可选，用于着色）
+│   ├── paths.geojson            ★ 通行线：唯一的寻路图
 │   ├── connectors.geojson       ★ 扶梯 / 电梯 / 楼梯 / 安检 / 边检 / 中转柜台
 │   └── L3F/                       每层一个目录
-│       └── walkable.geojson     ★ 可通行面（真正能走的地面）
+│       └── regions.geojson      ★ 隔离区标记（不参与寻路）
+│
+├── data/.backup/                ← 保存前的自动快照（已 gitignore）
 │
 ├── plans/                       ← 平面图底图放这里（已 gitignore，有版权）
+│
+├── client/                      导航客户端（零依赖，无构建步骤）
+│   ├── index.html
+│   ├── app.js                   浏览 + 导航、分步交互、面板
+│   └── lib/
+│       ├── view3d.mjs           3D 渲染与相机
+│       ├── view2d.mjs           2D 视图
+│       └── palette.mjs          配色（深浅两套）
 │
 ├── editor/                      画图工具（零依赖，无构建步骤）
 │   ├── index.html
@@ -145,16 +172,30 @@ projects/bdia-nav/
 ├── schema/                      JSON Schema —— 编辑器之外的补全与实时报错
 │
 ├── tools/
-│   ├── lib/geo.mjs              米制平面几何库（编辑器 / 校验器 / 未来寻路共用）
+│   ├── lib/geo.mjs              米制平面几何库（编辑器 / 校验器 / 客户端共用）
+│   ├── lib/graph.mjs            建图：通行线 → 寻路网络
+│   ├── lib/route.mjs            两层规划器（任务图 + 几何图 A*）
+│   ├── lib/search.mjs           搜索索引
+│   ├── lib/source-data.mjs      ★ 读 data/source —— 服务器与静态构建【共用这一份】
+│   ├── lib/domshim.mjs          无头测试用的最小 DOM 桩
 │   ├── editor-server.mjs        本地服务器：读写 data/source + 调用校验器
 │   ├── validate.mjs             ★ 校验器
-│   ├── selftest.mjs             故障注入自测（23 类错误）
-│   ├── editor-selftest.mjs      编辑器核心逻辑无头自测（19 项）
-│   └── editor-e2e.mjs           端到端：模拟浏览器解析模块依赖图
+│   ├── model-selftest.mjs       数据模型自测
+│   ├── client-selftest.mjs      客户端自测（投影 / 场景 / 点选）
+│   ├── vertical-selftest.mjs    跨层设施自测
+│   ├── editor-pick.mjs          编辑器跨层拾取自测
+│   ├── editor-e2e.mjs           端到端：模拟浏览器解析模块依赖图并打 API
+│   ├── build-static.mjs         ★ 生成静态站点（照搬客户端 + 生成数据）
+│   ├── static-parity.mjs        ★ 验证「静态客户端 == 开发客户端」
+│   ├── static-boot.mjs          无头启动真客户端，产出行为指纹
+│   ├── serve-static.mjs         本地静态预览（模拟 S3 + CloudFront）
+│   └── static/                  静态站点模板（shim / 部署脚本 / 站点 README）
 │
 └── docs/
     ├── DRAWING-GUIDE.md         ★ 画图操作手册
-    └── DATA-SCHEMA.md           ★ 数据模型手册
+    ├── DATA-SCHEMA.md           ★ 数据模型手册
+    ├── ZONE-MODEL.md            隔离区模型
+    └── STATIC-DEPLOY.md         ★ 静态部署手册
 ```
 
 ---
@@ -224,16 +265,20 @@ airside_domestic → landside           是到达出口（exit），单向自由
 ## 测试
 
 ```bash
-npm test    # 四套一起跑
+npm test    # 五套一起跑
 ```
 
 | 套件 | 作用 |
 |---|---|
-| `validate` | 源数据校验。当前 ERROR 0 |
-| `selftest` | **校验器故障注入**：往数据里塞 28 类真实错误，确认每一种都能被抓到 |
-| `editor:selftest` | **编辑器核心逻辑**：校准符号、自动算门、id 生成、统一设施模型、撤销、序列化（22 项） |
-| `editor:boot` | **编辑器启动冒烟**：用最小 DOM 桩在 node 里真正 boot 一遍，走真实的键盘/指针事件路径（43 项） |
-| `editor:e2e` | **端到端**：起临时服务器，像浏览器那样解析整张模块依赖图并打 API |
+| `validate` | 源数据校验 |
+| `test:model` | **数据模型**：检索文本归一化、必填索引字段、按词反查 |
+| `test:client` | **客户端**：近平面裁剪、场景棱柱数量、点选命中、选中高亮 |
+| `test:vertical` | **跨层设施**：楼层成员一致性、坐标必须跨层重合、接不上本层路网 |
+| `test:editor` | **编辑器**：跨层拾取对话框（`editor-pick`）+ 模块依赖图与 API 冒烟（`editor-e2e`） |
+| `test:static` | **静态站点一致性**：文件逐字节 + 依赖图 + 数据逐字节 + 客户端行为指纹 |
+
+`test:static` 只有在构建过静态站点之后才有意义（先 `npm run build:static`），
+所以不在 `npm test` 里。
 
 为什么值得写这些：它们都抓到过**光看代码发现不了**的问题 ——
 
@@ -244,6 +289,9 @@ npm test    # 四套一起跑
 - 「点状设施落在面状设施内部」这条检查**写在 `continue` 之后，永远不触发**
 - 校验器遇到几何型非法的障碍物**直接崩溃** —— 本该报告问题，结果什么也不报
 - 重构时漏删的 `const extra = []` 和残留的 `pack.rooms`，让**整个界面所有面板都是空的**，但 `node --check` 完全查不出来
+- DOM 桩缺 `document.documentElement`，客户端在模块顶层抛 `TypeError`，而桩里的
+  `unhandledRejection` 处理器把顶层 await 的拒绝吃掉、进程以**退出码 0** 结束 ——
+  于是 `test:client` 的第 3 节（点选命中 / 高亮 / 近平面裁剪）**一直没跑，而且算通过**
 
 共同特征：**不崩溃、不报错，只是安静地给出错误结果**。
 

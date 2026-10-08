@@ -198,8 +198,26 @@ export function installDom({ fetchImpl, dpr = 1 } = {}) {
   const canvasHost = new ShimElement('main');
   cv.parentElement = canvasHost;
 
+  /*
+   * ★ <html> 必须有。
+   *
+   *   client/app.js 在【模块顶层】就调用 applyTheme(currentTheme())，
+   *   而 currentTheme() 读的是 document.documentElement.getAttribute('data-theme')。
+   *   桩里没有 documentElement 时这里抛 TypeError ——
+   *   于是整个模块导入失败，__navTestHooks 之后的代码全不执行。
+   *
+   *   更坏的是它【不报错】：installDom 注册的 unhandledRejection 处理器
+   *   会把顶层 await 的拒绝吃掉，node 事件循环随即空掉，进程以退出码 0 结束。
+   *   表现就是「客户端自测跑到第 3 节就没输出了，而且算通过」——
+   *   第 3 节保护的正是点选命中 / 高亮 / 近平面裁剪这几个重灾区。
+   *
+   *   所以 documentElement 不是可有可无的装饰，它决定第 3 节到底跑不跑。
+   */
+  const documentElement = new ShimElement('html');
+
   const document = {
     body: new ShimElement('body'),
+    documentElement,
     getElementById: getById,
     createElement: (tag) => new ShimElement(tag),
     /*

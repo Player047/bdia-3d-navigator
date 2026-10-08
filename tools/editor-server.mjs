@@ -16,6 +16,9 @@ import http from 'node:http';
 import { spawnSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+// ★ 读取逻辑与静态构建共用一份，两边不可能算出不同的载荷。
+import { loadAll, dataStamp, readJsonIfExists } from './lib/source-data.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'data', 'source');
 const PLANS = path.join(ROOT, 'plans');
@@ -38,6 +41,18 @@ const argOf = (name, dflt) => {
 const PORT = Number(argOf('--port', process.env.PORT ?? 5173));
 const HOST = '127.0.0.1';
 const VALIDATOR = path.join(ROOT, 'tools', 'validate.mjs');
+const BUILD_STATIC = path.join(ROOT, 'tools', 'build-static.mjs');
+
+/*
+ * ★ --static-out <dir>：每次保存成功后【顺手重建静态站点】。
+ *
+ *   没有它的话，「改了数据」和「静态站点跟着更新」之间隔着一个
+ *   需要人记住的手工步骤 —— 而漏掉它的表现是「线上还是旧数据」，
+ *   不报错，也很难第一时间想到。
+ *
+ *   传了才开。不开的时候保存路径完全不变（多一次 spawn 都不做）。
+ */
+const STATIC_OUT = argOf('--static-out', process.env.BDIA_STATIC_OUT ?? '');
 
 fs.mkdirSync(TMP, { recursive: true });
 fs.mkdirSync(PLANS, { recursive: true });
@@ -81,10 +96,6 @@ function sendJson(res, status, obj) {
   send(res, status, JSON.stringify(obj), { 'Content-Type': 'application/json; charset=utf-8' });
 }
 
-function readJsonIfExists(file, fallback = null) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
-}
-
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -101,68 +112,13 @@ function readBody(req) {
 
 /* ------------------------------------------------------- /api/data */
 
-/**
- * 数据指纹 = data/source 下所有文件里最新的修改时间。
+/*
+ * 数据指纹、楼层目录扫描、整包读取都在 tools/lib/source-data.mjs。
  *
- * ★ 这是拿数据换来的第二道闸。
- *   编辑器把数据加载到内存之后，如果磁盘上的文件被别的东西改了
- *   （改了代码、跑了一次迁移脚本、另一个标签页保存过），
- *   用户再按保存，就会把【加载时那份旧的】整个写回去 —— 静默回退，
- *   而且回退出来的还是一份完全合法的 JSON，事后看不出任何异常。
- *
- *   实测发生过两次：一次把 paths/obstacles/regions 写成空集合，
- *   一次把 65 个类别的旧 manifest 盖回合并后的 36 个。
- *
- *   所以：加载时把指纹给客户端，保存时带回来比对。对不上就拒收。
+ * ★ 静态构建（tools/build-static.mjs）调的是同一份。
+ *   如果这里再写一遍读取逻辑，那么「加一个数据文件」「改楼层扫描规则」
+ *   就只会在一侧生效 —— 表现是【静态站点上少了一整层，且不报任何错】。
  */
-function dataStamp() {
-  let newest = 0;
-  let count = 0;
-  const walk = (dir) => {
-    if (!fs.existsSync(dir)) return;
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (e.name.startsWith('.')) continue;
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) { walk(full); continue; }
-      try { newest = Math.max(newest, fs.statSync(full).mtimeMs); count++; } catch { /* ignore */ }
-    }
-  };
-  walk(SRC);
-  return { mtime: Math.round(newest), files: count };
-}
-
-/** 扫描 data/source 下的楼层目录。 */
-function listLevelDirs() {
-  if (!fs.existsSync(SRC)) return [];
-  return fs.readdirSync(SRC, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('.') && !d.name.startsWith('_'))
-    .map((d) => d.name).sort();
-}
-
-function loadAll() {
-  const levels = {};
-  for (const dir of listLevelDirs()) {
-    // ★ 区域 = 隔离区标记，不参与寻路。寻路完全由 paths.geojson 决定。
-    const regions = readJsonIfExists(path.join(SRC, dir, 'regions.geojson'));
-    if (!regions) continue;
-    levels[dir] = { regions };
-  }
-  const empty = () => ({ type: 'FeatureCollection', features: [] });
-  return {
-    ok: true,
-    srcDir: path.relative(ROOT, SRC).replace(/\\/g, '/'),
-    manifest: readJsonIfExists(path.join(SRC, 'manifest.json')),
-    anchors: readJsonIfExists(path.join(SRC, 'anchors.json')),
-    calibration: readJsonIfExists(path.join(SRC, '_calibration.json'), { version: 2, levels: {} }),
-    connectors: readJsonIfExists(path.join(SRC, 'connectors.geojson'), empty()),
-    // ★ 设施是唯一实体，几何是 Point 或 Polygon，点面混在一个文件里
-    facilities: readJsonIfExists(path.join(SRC, 'facilities.geojson'), empty()),
-    obstacles: readJsonIfExists(path.join(SRC, 'obstacles.geojson'), empty()),
-    // ★ 通行线：唯一的寻路图
-    paths: readJsonIfExists(path.join(SRC, 'paths.geojson'), empty()),
-    levels,
-  };
-}
 
 /* -------------------------------------------------------- /api/save */
 
@@ -248,7 +204,7 @@ function handleSave(req, res) {
      *    客户端没带 stamp 就跳过（兼容旧页面），带了就必须对得上。
      */
     if (payload.stamp && !payload.force) {
-      const now = dataStamp();
+      const now = dataStamp(SRC);
       if (payload.stamp.mtime && now.mtime > payload.stamp.mtime) {
         return sendJson(res, 409, {
           ok: false,
@@ -303,7 +259,28 @@ function handleSave(req, res) {
      *   于是【第二次保存必然被判为过期】。用户看到的现象就是
      *   「第一次存上了，之后就怎么都存不进去」。
      */
-    return sendJson(res, 200, { ok: true, written, rejected, backup, stamp: dataStamp() });
+    const stamp = dataStamp(SRC);
+
+    /*
+     * ③ 顺手重建静态站点（只有在启用了 --static-out 时才做）。
+     *    放在写盘之后：构建读的就是刚写下去的那份数据。
+     *    构建失败【不影响保存结果】—— 数据已经落盘了，
+     *    回一个失败码会让用户以为保存没成功，然后去重复保存。
+     */
+    let staticBuild = null;
+    if (STATIC_OUT) {
+      const r = spawnSync(process.execPath, [BUILD_STATIC, '--out', STATIC_OUT, '--quiet'], {
+        cwd: ROOT, stdio: 'inherit', timeout: 120000,
+      });
+      staticBuild = { ok: r.status === 0, exitCode: r.status, out: STATIC_OUT };
+      if (r.status !== 0) {
+        console.error(`\n  ✗ 静态站点重建失败（退出码 ${r.status}）—— 数据已保存，静态站点还是旧的\n`);
+      } else {
+        console.log(`  ↻ 静态站点已重建 → ${STATIC_OUT}\n`);
+      }
+    }
+
+    return sendJson(res, 200, { ok: true, written, rejected, backup, stamp, staticBuild });
   }).catch((e) => sendJson(res, 500, { ok: false, error: e.message }));
 }
 
@@ -353,8 +330,8 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (url === '/api/data' && req.method === 'GET') {
-      const payload = loadAll();
-      payload.stamp = dataStamp();      // ★ 客户端保存时要带回来，用来发现「磁盘比你新」
+      const payload = loadAll(SRC);
+      payload.stamp = dataStamp(SRC);   // ★ 客户端保存时要带回来，用来发现「磁盘比你新」
       return sendJson(res, 200, payload);
     }
     if (url === '/api/save' && req.method === 'POST') return handleSave(req, res);
@@ -425,6 +402,10 @@ server.listen(PORT, HOST, () => {
 
   if (!argv.includes('--no-open') && which !== 'none') {
     for (const u of targets) openBrowser(u);
+  }
+  if (STATIC_OUT) {
+    console.log(`  静态站点   ${STATIC_OUT}`);
+    console.log('             ↑ 每次保存后自动重建');
   }
   console.log('  Ctrl+C 停止　　　想只开一个：--open=editor / --open=client');
   console.log('');
