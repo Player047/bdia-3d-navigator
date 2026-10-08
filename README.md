@@ -188,6 +188,7 @@ projects/bdia-nav/
 │   ├── build-static.mjs         ★ 生成静态站点（照搬客户端 + 生成数据）
 │   ├── static-parity.mjs        ★ 验证「静态客户端 == 开发客户端」
 │   ├── static-boot.mjs          无头启动真客户端，产出行为指纹
+│   ├── static-http-selftest.mjs 走真实 HTTP 查部署可用性（MIME / 缓存头 / 入口）
 │   ├── serve-static.mjs         本地静态预览（模拟 S3 + CloudFront）
 │   └── static/                  静态站点模板（shim / 部署脚本 / 站点 README）
 │
@@ -275,7 +276,7 @@ npm test    # 五套一起跑
 | `test:client` | **客户端**：近平面裁剪、场景棱柱数量、点选命中、选中高亮 |
 | `test:vertical` | **跨层设施**：楼层成员一致性、坐标必须跨层重合、接不上本层路网 |
 | `test:editor` | **编辑器**：跨层拾取对话框（`editor-pick`）+ 模块依赖图与 API 冒烟（`editor-e2e`） |
-| `test:static` | **静态站点一致性**：文件逐字节 + 依赖图 + 数据逐字节 + 客户端行为指纹 |
+| `test:static` | **静态站点**：语义一致性（文件逐字节 + 依赖图 + 数据逐字节 + 客户端行为指纹）+ 部署可用性（走真实 HTTP 查入口、MIME、缓存头、泄漏） |
 
 `test:static` 只有在构建过静态站点之后才有意义（先 `npm run build:static`），
 所以不在 `npm test` 里。

@@ -81,7 +81,9 @@ node tools/editor-server.mjs --static-out ../BDIA-3D-Navigator
 
 ## 3. 怎么证明「静态客户端和开发客户端完全一样」
 
-`npm run test:static`（`tools/static-parity.mjs`）分五层，从弱到强：
+`npm run test:static` 跑两套：`static-parity`（语义一致）+ `static-http-selftest`（部署可用）。
+
+### 3.1 `tools/static-parity.mjs` —— 语义一致，分五层
 
 | 层 | 比什么 | 能抓到什么 |
 |---|---|---|
@@ -94,6 +96,23 @@ node tools/editor-server.mjs --static-out ../BDIA-3D-Navigator
 第 ④ 层的指纹包含：楼层与设施/通行线/障碍物计数、设施 id 全集的哈希、7 组搜索结果（id + 得分）、**20 对起终点的算路结果与步骤序列哈希**、场景棱柱构成、以及 2D/3D 的**绘制调用次数**。
 
 前三层只能证明「文件是那份文件」；第 ④ 层才能证明「跑起来是同一个东西」。
+
+### 3.2 `tools/static-http-selftest.mjs` —— 部署可用，走真实 HTTP
+
+`static-parity` 是**从磁盘直接 import** 客户端来比行为的，它证明两份代码语义等价，
+但整条链路上还有一段它碰不到 —— 浏览器真正会请求什么、那些请求在静态服务器上
+能不能取到、取回来的头对不对。所以这一套必须走真的 HTTP：
+
+| 组 | 查什么 |
+|---|---|
+| ① 入口 | `/` 是跳转页且目标可取；`/client/index.html` 是 `text/html` + `no-cache`；**shim 排在 app.js 之前**；`/client/` 是 404（S3 REST + OAC 不做目录索引） |
+| ② 依赖图 | 从 `index.html` 走一遍依赖图，**逐个取回来查 Content-Type 是不是 JavaScript** —— ES module 有严格 MIME 检查，类型不对浏览器直接拒绝执行 |
+| ③ 数据 | `/api/data` 是 404（正因如此才需要 shim）；`client/api/data.json` 可取、是 JSON、`no-cache`、非空、与 `build-manifest.json` 数量一致 |
+| ④ 缓存 | 静态资源 `immutable` 长缓存，入口与数据 `no-cache` |
+| ⑤ 泄漏 | `editor/`、`data/source/` 原始 GeoJSON、有版权的 `plans/` 都没有被打包进去 |
+
+模块清单**不写死**：从 `index.html` 出发走依赖图再逐个取，所以加了新模块忘了搬、
+或者改了 import 路径，都会被自动覆盖。
 
 > 验证器本身做过变异测试：往站点里改一个字节、或改源码不重建，都会失败并指出是哪一种。一个不会失败的测试等于没有测试。
 
