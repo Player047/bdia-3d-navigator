@@ -359,7 +359,7 @@ function main() {
     console.log(`  依赖图     ${graph.size} 个资源，全部落地`);
     console.log(`  照搬       ${manifest.files.length - 1} 个文件逐字节相同`);
     console.log(`  改写       client/index.html（${manifest.files.find((f) => f.path === 'client/index.html')?.edits.length ?? 0} 处，见 build-manifest.json）`);
-    console.log(`  入口       /  →  ./client/`);
+    console.log(`  入口       /  →  ./client/index.html`);
     if (removed.length) console.log(`  清理       ${removed.length} 个上一版遗留文件：${removed.join(', ')}`);
     console.log('  ' + '─'.repeat(62));
   }
