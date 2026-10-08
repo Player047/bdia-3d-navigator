@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "障碍物 obstacles.geojson",
+  "description": "纯障碍：柱子、柜台、设备、不可通行的员工区。没有名字、没有类别 —— 它们不是设施，只是要从可通行面里扣掉的区域，不该被搜到、也不该成为导航目的地。",
+
+  "type": "object",
+  "required": ["type", "features"],
+  "properties": {
+    "type": { "const": "FeatureCollection" },
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+    "_rule": { "type": "string" },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "id", "geometry", "properties"],
+        "properties": {
+          "type": { "const": "Feature" },
+          "id": {
+            "type": "string",
+            "pattern": "^obs-[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "命名约定 obs-<楼层>-<序号>，例如 obs-3f-0001"
+          },
+          "geometry": {
+            "allOf": [{ "$ref": "./common.schema.json#/$defs/polygonGeometry" }],
+            "description": "★ 必须是 Polygon。点是挡不住任何东西的。"
+          },
+          "properties": {
+            "type": "object",
+            "required": ["level", "kind"],
+            "patternProperties": { "^_": {} },
+            "additionalProperties": false,
+            "properties": {
+              "level": { "$ref": "./common.schema.json#/$defs/levelId" },
+              "zone": {
+                "allOf": [{ "$ref": "./common.schema.json#/$defs/zoneId" }],
+                "description": "可选。填了就要求落在同 zone 的可通行面内"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["column", "counter", "equipment", "planter", "furniture", "stairwell", "shaft", "void", "blocked"],
+                "description": "必须在 manifest.obstacleKinds 中定义"
+              },
+              "name": { "type": "string", "description": "可选。不填就不显示标签（不影响导航）" },
+              "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

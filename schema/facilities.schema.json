@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "设施 facilities.geojson",
+  "description": "★ 唯一的设施实体。几何是 Point 或 Polygon，属性完全一致 —— 店铺和饮水机在领域上是同一种东西，只是形状不同。",
+
+  "type": "object",
+  "required": ["type", "features"],
+  "properties": {
+    "type": { "const": "FeatureCollection" },
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+    "_area": { "type": "string" },
+    "_point": { "type": "string" },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "id", "geometry", "properties"],
+        "properties": {
+          "type": { "const": "Feature" },
+          "id": {
+            "type": "string",
+            "pattern": "^fac-[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "命名约定 fac-<名称>-<楼层>-<序号>，例如 fac-gate-3f-c01 / fac-3f-w1"
+          },
+          "geometry": {
+            "oneOf": [
+              { "$ref": "./common.schema.json#/$defs/pointGeometry" },
+              { "$ref": "./common.schema.json#/$defs/polygonGeometry" }
+            ],
+            "description": "★ Point（登机口、饮水、充电…）或 Polygon（店铺、休息室、卫生间…）。选哪种只看它是不是一块地。"
+          },
+          "properties": {
+            "type": "object",
+            "required": ["level", "zone", "category", "name", "nameEn"],
+            "patternProperties": { "^_": {} },
+            "additionalProperties": false,
+            "properties": {
+              "level": { "$ref": "./common.schema.json#/$defs/levelId" },
+              "zone": { "$ref": "./common.schema.json#/$defs/zoneId" },
+              "category": {
+                "type": "string",
+                "description": "必须在 manifest.facilityCategories 中定义。点状和面状共用这一张表。常用：gate / checkin / security / immigration / customs / transfer_desk / baggage_claim / exit / service_desk / restroom / nursing / water / charging / seating / dining / cafe / retail / duty_free / convenience / atm / tax_refund / medical / police / lost_found …"
+              },
+              "subcategory": { "type": "string", "description": "更细的分类，自由文本，如 \"chinese\" / \"noodle\"" },
+              "name": { "type": "string", "description": "中文名（搜索主键）" },
+              "nameEn": { "type": "string", "description": "英文名" },
+              "aliases": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "别名与同义词。「星巴克」要能被「Starbucks」「咖啡」搜到。"
+              },
+              "pinyin": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "拼音全拼与首字母缩写，构建期生成搜索索引用"
+              },
+              "location": {
+                "type": "string",
+                "description": "人工位置描述，用于搜索结果里的副标题，如「3F 北指廊西侧」"
+              },
+              "hours": { "$ref": "./common.schema.json#/$defs/hours" },
+              "phone": { "type": ["string", "null"] },
+              "accessible": { "type": "boolean", "description": "无障碍可达" },
+              "tags": { "type": "array", "items": { "type": "string" }, "description": "如 [\"24h\", \"会员\"]" },
+
+              "fields": {
+                "type": "object",
+                "description": "★ 搜索索引标签：值随便填多少，供搜索使用。字段定义写在 manifest.facilityCategories[类别].fields 上，对该类别的【所有】设施生效（值机柜台的「字母编号 / 航空公司 / 航司代码」就是这么要求的）。也允许加类别里没定义的临时字段。",
+                "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+              },
+
+              "verticalGroup": {
+                "type": ["string", "null"],
+                "description": "★ 跨层设施：同一部电梯/扶梯在每一层各是一个点状设施，靠这个 id 串起来。同组各成员的 (x,y) 必须完全相同（容差见 thresholds.verticalGroupTolerance）—— 这是整个模型里唯一「跨楼层同一个位置」的地方。"
+              },
+              "verticalLevels": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "这组跨层设施连通哪些楼层，例如 [\"L3F\",\"L4F\"]。只在组内任意一个成员上声明即可。"
+              },
+
+              "_note": {
+                "type": "string",
+                "description": "「门」是算出来的，不是填出来的：面状设施的可通行性取决于有没有通行线吸附到它的边缘，寻路点就是那个吸附点。挪动通行线，入口跟着动，不会有过期的 door 字段。"
+              },
+
+              "public": { "type": "boolean", "default": true, "description": "仅面状设施。旅客能否进入" },
+              "through": {
+                "type": "boolean",
+                "default": false,
+                "description": "仅面状设施。是否允许穿行。默认 false —— 店铺不能当通道用，否则路径会穿店而过。"
+              },
+
+              "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

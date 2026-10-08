@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "manifest.json — 全局配置",
+  "description": "楼层、隔离区、zone 跨越规则、POI 类别、连接件类型、时间模型、场景任务图、校验阈值。改这里等于改整个项目的行为。",
+
+  "type": "object",
+  "required": ["schemaVersion", "dataVersion", "projection", "levels", "zones", "facilityCategories", "connectorTypes", "zoneRules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "dataVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+",
+      "description": "★ 数据版本号。前端启动时比对，变了就清缓存重取。每次发布数据都要 +1。"
+    },
+    "airport": {
+      "type": "object",
+      "properties": {
+        "iata": { "type": "string" }, "icao": { "type": "string" },
+        "name": { "type": "string" }, "nameEn": { "type": "string" },
+        "shortName": { "type": "string" },
+        "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+      }
+    },
+
+    "projection": {
+      "type": "object",
+      "required": ["type", "origin", "axis", "metersPerDegree"],
+      "properties": {
+        "type": { "const": "local-enu" },
+        "origin": {
+          "type": "object",
+          "required": ["lat", "lon"],
+          "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } },
+          "description": "本地坐标系原点 (0,0) 对应的 WGS84 位置"
+        },
+        "axis": {
+          "type": "object",
+          "properties": {
+            "x": { "const": "east" }, "y": { "const": "north" }, "unit": { "const": "meter" }
+          }
+        },
+        "metersPerDegree": {
+          "type": "object",
+          "required": ["lat", "lon"],
+          "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } },
+          "description": "北京纬度 39.5°：lat ≈ 111320，lon ≈ 111320 × cos(39.5°) ≈ 85882。直接对经纬度做距离运算会有约 30% 误差。"
+        },
+        "geojsonCoordinateOrder": { "const": "xy" }
+      }
+    },
+
+    "bbox": {
+      "type": "object",
+      "required": ["minX", "maxX", "minY", "maxY"],
+      "properties": {
+        "minX": { "type": "number" }, "maxX": { "type": "number" },
+        "minY": { "type": "number" }, "maxY": { "type": "number" },
+        "unit": { "const": "meter" }
+      },
+      "description": "所有源数据坐标必须落在此范围内，防止误画飞出"
+    },
+
+    "levels": {
+      "type": "object",
+      "description": "楼层定义。键是楼层 id。order 越大越靠上。★ roles 必须对照官方平面图核实。",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Za-z0-9]+$": {
+          "type": "object",
+          "required": ["order", "name", "nameEn"],
+          "properties": {
+            "order": { "type": "integer", "description": "排序权重，越大越靠上" },
+            "elevation": { "type": "number", "description": "标高（米），用于 3D 渲染时各层的垂直间距" },
+            "name": { "type": "string" },
+            "nameEn": { "type": "string" },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["departure", "arrival", "checkin", "security", "immigration", "airside", "landside", "gates", "transit", "baggage_claim", "dining", "retail", "observation", "rail", "parking", "ground_transport", "staff"]
+              }
+            },
+            "verified": { "$ref": "./common.schema.json#/$defs/verified" },
+            "drawn": { "type": "boolean", "description": "是否已经画好数据（仅作进度标记）" }
+          }
+        }
+      }
+    },
+
+    "regionKinds": {
+      "type": "object",
+      "description": "区域（隔离区标记）的种类。★ 区域不参与寻路 —— 寻路完全由通行线决定。区域只用来承载 zone 语义、判断通行线有没有画到区域外、判断设施落在哪个区域上、以及渲染着色。",
+      "patternProperties": { "^_": {}, "^[a-z_]+$": { "type": "object", "properties": { "name": { "type": "string" }, "nameEn": { "type": "string" } } } }
+    },
+
+    "pathKinds": {
+      "type": "object",
+      "description": "通行线的种类。★ 通行线是唯一的寻路图。",
+      "patternProperties": { "^_": {}, "^[a-z_]+$": { "type": "object", "properties": { "name": { "type": "string" }, "nameEn": { "type": "string" } } } }
+    },
+
+    "airlines": {
+      "type": "object",
+      "description": "航司代码表。用在类别字段里 type=airline 的字段上做下拉建议 —— 不是白名单，填表外的值也允许。",
+      "patternProperties": {
+        "^_": {},
+        "^[A-Z0-9]{2,3}$": {
+          "type": "object",
+          "properties": { "name": { "type": "string" }, "nameEn": { "type": "string" } }
+        }
+      }
+    },
+
+    "obstacleKinds": {
+      "type": "object",
+      "description": "障碍物种类。障碍物没有名字、没有类别 —— 不是设施。",
+      "patternProperties": { "^_": {}, "^[a-z_]+$": { "type": "object", "properties": { "name": { "type": "string" }, "nameEn": { "type": "string" } } } }
+    },
+
+    "zones": {
+      "type": "object",
+      "patternProperties": {
+        "^_": {},
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["name", "nameEn"],
+          "properties": {
+            "name": { "type": "string" }, "nameEn": { "type": "string" },
+            "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+            "public": { "type": "boolean" },
+            "order": { "type": "integer" }
+          }
+        }
+      }
+    },
+
+    "zoneRules": {
+      "type": "object",
+      "required": ["allowedTransitions"],
+      "properties": {
+        "allowedTransitions": {
+          "type": "array",
+          "description": "★ 有向表。landside → airside_domestic 要过安检；airside_domestic → landside 是到达出口。反过来放行就等于没安检。",
+          "items": {
+            "type": "object",
+            "required": ["from", "to", "via"],
+            "properties": {
+              "from": { "$ref": "./common.schema.json#/$defs/zoneId" },
+              "to": { "$ref": "./common.schema.json#/$defs/zoneId" },
+              "via": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string" },
+                "description": "允许用于这种跨越的连接件类型"
+              },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "connectorTypes": {
+      "type": "object",
+      "patternProperties": {
+        "^_": {},
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["name", "nameEn", "horizontal", "accessible", "alignTolerance"],
+          "properties": {
+            "name": { "type": "string" }, "nameEn": { "type": "string" },
+            "horizontal": { "type": "boolean", "description": "true = 同层连接（步行道/安检），false = 跨层（扶梯/电梯/楼梯/坡道）" },
+            "accessible": { "type": "boolean", "description": "该类型默认是否无障碍可用" },
+            "oneWay": {
+              "type": "boolean",
+              "description": "★ 是否天然单向。安检/边检/海关/检验检疫/到达出口都是 true —— 默认双向会让旅客被规划出「倒着穿过安检走回外面」的路线。垂直连接件（扶梯/楼梯/坡道）没写这个字段时按单向处理。"
+            },
+            "alignTolerance": {
+              "type": "number",
+              "description": "★ 跨层时两端允许的水平偏差（米）。电梯 1.5、楼梯 2、扶梯 3。超了说明两层平面图没对齐。"
+            },
+            "category": { "type": "string", "enum": ["vertical", "horizontal", "transit", "process"] }
+          }
+        }
+      }
+    },
+
+    "facilityCategories": {
+      "type": "object",
+      "description": "★ 设施类别。点状设施和面状设施共用这一张表 —— 它们在领域上是同一种东西，只是几何不同。",
+      "patternProperties": {
+        "^_": {},
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["name", "nameEn", "group"],
+          "properties": {
+            "name": { "type": "string" }, "nameEn": { "type": "string" },
+            "group": {
+              "type": "string",
+              "enum": ["transport", "process", "service", "rest", "facility", "finance", "medical", "dining", "shopping"]
+            },
+            "icon": { "type": "string" },
+            "routeable": { "type": "boolean", "description": "能否作为导航目的地或途经点" }
+          }
+        }
+      }
+    },
+
+    "timeModel": {
+      "type": "object",
+      "description": "★ 全部为估算值，必须用实测数据校准。单位：秒 / 米每秒。",
+      "properties": {
+        "walkSpeed": { "type": "object", "additionalProperties": { "type": "number" } },
+        "connectorTime": { "type": "object", "additionalProperties": { "type": "object" } },
+        "processTime": { "type": "object", "additionalProperties": { "type": "object" } }
+      }
+    },
+
+    "scenarios": {
+      "type": "object",
+      "description": "★ 两层规划器的上层：任务图。上层是业务规则（会变），下层是几何图（不会变）。",
+      "patternProperties": {
+        "^_": {},
+        "^[a-z-]+$": {
+          "type": "object",
+          "required": ["name", "nameEn", "steps"],
+          "properties": {
+            "name": { "type": "string" }, "nameEn": { "type": "string" },
+            "zonePath": {
+              "type": "array",
+              "items": { "$ref": "./common.schema.json#/$defs/zoneId" },
+              "description": "该场景依次经过的隔离区。相邻两项之间必须有 zoneRules 支撑。"
+            },
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "category", "required"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "category": { "type": "string", "description": "对应 poiCategories / roomCategories / connectorTypes 里的一个键" },
+                  "required": { "type": "boolean" },
+                  "when": { "type": "string", "description": "条件表达式，如 \"!checkedIn || needBaggageDrop\"" },
+                  "dynamic": { "type": "string", "description": "运行期取值来源，如 \"boardingGate\"" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "thresholds": {
+      "type": "object",
+      "description": "校验阈值。校验器从这里读取，不要在脚本里硬编码。",
+      "properties": {
+        "doorTolerance": { "type": "number", "default": 0.5 },
+        "connectorEndpointTolerance": { "type": "number", "default": 1.0 },
+        "polygonTouchTolerance": { "type": "number", "default": 0.05 },
+        "minPolygonArea": { "type": "number", "default": 0.5 },
+        "minRoomArea": { "type": "number", "default": 1.0 },
+        "minCorridorWidth": { "type": "number", "default": 1.2 },
+        "anchorCountMin": { "type": "integer", "default": 3 },
+        "anchorResidualMax": { "type": "number", "default": 2.0 },
+        "anchorScaleRange": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "poiRoomTolerance": { "type": "number", "default": 1.0 },
+        "duplicatePoiDistance": { "type": "number", "default": 1.0 }
+      }
+    }
+  }
+}

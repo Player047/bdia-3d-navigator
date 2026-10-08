@@ -1,0 +1,1774 @@
+{
+  "$schema": "../../schema/manifest.schema.json",
+  "schemaVersion": 1,
+  "dataVersion": "0.1.0-example",
+  "airport": {
+    "iata": "PKX",
+    "icao": "ZBAD",
+    "name": "北京大兴国际机场",
+    "nameEn": "Beijing Daxing International Airport",
+    "shortName": "BDIA",
+    "verified": false
+  },
+  "projection": {
+    "type": "local-enu",
+    "_comment": "全部源数据使用本地米制坐标系绘制：x = 正东(米)，y = 正北(米)。不要用经纬度画图。",
+    "origin": {
+      "lat": 39.5098,
+      "lon": 116.4109
+    },
+    "axis": {
+      "x": "east",
+      "y": "north",
+      "unit": "meter"
+    },
+    "metersPerDegree": {
+      "lat": 111320,
+      "lon": 85882
+    },
+    "_metersPerDegreeComment": "北京纬度约 39.51°，1° 经度 ≈ 111320 × cos(39.51°) ≈ 85882 m。直接用经纬度算距离会有约 30% 误差（Web Mercator 尺度因子 1/cos(φ) ≈ 1.296）。",
+    "geojsonCoordinateOrder": "xy",
+    "_geojsonCoordinateOrderComment": "★ 本项目中所有 GeoJSON coordinates 一律是 [x, y] = [东, 北] 米，绝对不是 [lon, lat]！只有 anchors.json 的 wgs84 字段是 [lon, lat]。"
+  },
+  "bbox": {
+    "_comment": "所有源数据坐标必须落在此范围内，防止误画飞出。航站楼核心区约 1km 量级。",
+    "minX": -700,
+    "maxX": 700,
+    "minY": -700,
+    "maxY": 700,
+    "unit": "meter"
+  },
+  "levels": {
+    "_comment": "★ 楼层角色(roles)是按公开资料推测的，必须对照官方平面图核实后把 verified 改为 true。校验器会对 verified:false 的楼层给出 INFO 提示。order 越大越靠上。",
+    "L5F": {
+      "order": 7,
+      "elevation": 24,
+      "name": "五层",
+      "nameEn": "Level 5",
+      "roles": [
+        "dining",
+        "observation"
+      ],
+      "verified": false,
+      "drawn": false
+    },
+    "L4F": {
+      "order": 6,
+      "elevation": 18,
+      "name": "四层",
+      "nameEn": "Level 4",
+      "roles": [
+        "departure",
+        "checkin",
+        "security",
+        "airside"
+      ],
+      "verified": false,
+      "drawn": false
+    },
+    "L3F": {
+      "order": 5,
+      "elevation": 12,
+      "name": "三层",
+      "nameEn": "Level 3",
+      "roles": [
+        "departure",
+        "airside",
+        "gates",
+        "transit"
+      ],
+      "verified": false,
+      "drawn": true
+    },
+    "L2F": {
+      "order": 4,
+      "elevation": 6,
+      "name": "二层",
+      "nameEn": "Level 2",
+      "roles": [
+        "arrival",
+        "baggage_claim",
+        "transit"
+      ],
+      "verified": false,
+      "drawn": false
+    },
+    "L1F": {
+      "order": 3,
+      "elevation": 0,
+      "name": "一层",
+      "nameEn": "Level 1",
+      "roles": [
+        "arrival",
+        "baggage_claim",
+        "landside",
+        "ground_transport"
+      ],
+      "verified": false,
+      "drawn": false
+    },
+    "B1": {
+      "order": 2,
+      "elevation": -6.5,
+      "name": "地下一层",
+      "nameEn": "B1",
+      "roles": [
+        "rail",
+        "landside",
+        "parking"
+      ],
+      "verified": false,
+      "drawn": false
+    },
+    "B2": {
+      "order": 1,
+      "elevation": -13,
+      "name": "地下二层",
+      "nameEn": "B2",
+      "roles": [
+        "parking",
+        "rail"
+      ],
+      "verified": false,
+      "drawn": false
+    }
+  },
+  "regionKinds": {
+    "_comment": "★ 区域 = 隔离区标记。【不参与寻路】—— 寻路完全由 paths.geojson 决定。区域只负责：① 承载 zone 语义 ② 判断通行线有没有画到区域外 ③ 判断设施落在哪个区域上 ④ 渲染着色。",
+    "_floor": "★ 楼板 = 「可通行面」区域 − 「挑空」障碍物。只有 kind = walkable 的区域参与画楼板；别的种类（候机区/走廊/指廊…）只是语义标签，不参与。一个楼层一个可通行面就够，形状可以很复杂（航站楼本来就不是矩形）。",
+    "walkable": {
+      "name": "可通行面",
+      "nameEn": "Walkable area"
+    },
+    "concourse": {
+      "name": "候机区",
+      "nameEn": "Concourse"
+    },
+    "lobby": {
+      "name": "厅",
+      "nameEn": "Lobby"
+    },
+    "corridor": {
+      "name": "走廊",
+      "nameEn": "Corridor"
+    },
+    "pier": {
+      "name": "指廊",
+      "nameEn": "Pier"
+    },
+    "hall": {
+      "name": "大厅",
+      "nameEn": "Hall"
+    },
+    "queue": {
+      "name": "排队区",
+      "nameEn": "Queue area"
+    },
+    "bridge": {
+      "name": "连廊",
+      "nameEn": "Bridge"
+    },
+    "platform": {
+      "name": "站台",
+      "nameEn": "Platform"
+    },
+    "staff": {
+      "name": "员工区",
+      "nameEn": "Staff area"
+    }
+  },
+  "pathKinds": {
+    "_comment": "通行线种类。通行线是【唯一的寻路图】—— 端点、顶点、交叉点都是图节点，两条线交叉即连通。区域从「寻路图」降级为「隔离区标记 + 几何约束」。",
+    "spine": {
+      "name": "主通道",
+      "nameEn": "Spine"
+    },
+    "corridor": {
+      "name": "走廊",
+      "nameEn": "Corridor"
+    },
+    "pier": {
+      "name": "指廊通道",
+      "nameEn": "Pier walkway"
+    },
+    "branch": {
+      "name": "支线",
+      "nameEn": "Branch"
+    },
+    "queue": {
+      "name": "排队折线",
+      "nameEn": "Queue line"
+    },
+    "walkway": {
+      "name": "自动步道",
+      "nameEn": "Travelator"
+    },
+    "staff": {
+      "name": "员工通道",
+      "nameEn": "Staff route"
+    }
+  },
+  "obstacleKinds": {
+    "_comment": "障碍物种类。障碍物没有名字、没有类别 —— 它们不是设施，只是要从可通行面里扣掉的区域，不该被搜到、也不该成为导航目的地。",
+    "column": {
+      "name": "柱子",
+      "nameEn": "Column"
+    },
+    "counter": {
+      "name": "柜台",
+      "nameEn": "Counter"
+    },
+    "equipment": {
+      "name": "设备",
+      "nameEn": "Equipment"
+    },
+    "planter": {
+      "name": "绿植",
+      "nameEn": "Planter"
+    },
+    "furniture": {
+      "name": "固定家具",
+      "nameEn": "Fixed furniture"
+    },
+    "stairwell": {
+      "name": "楼梯井",
+      "nameEn": "Stairwell"
+    },
+    "shaft": {
+      "name": "管井",
+      "nameEn": "Shaft"
+    },
+    "void": {
+      "name": "挑空",
+      "nameEn": "Void"
+    },
+    "blocked": {
+      "name": "封闭区域",
+      "nameEn": "Blocked area"
+    }
+  },
+  "zones": {
+    "_comment": "隔离区。zone 只能通过连接件(connector)跨越，见 zoneRules。这是机场导航与商场导航的根本区别。",
+    "landside": {
+      "name": "非隔离区（安检前）",
+      "nameEn": "Landside",
+      "color": "#8FA3B0",
+      "public": true,
+      "order": 1
+    },
+    "transit": {
+      "name": "中转区",
+      "nameEn": "Transit",
+      "color": "#C9A227",
+      "public": true,
+      "order": 2
+    },
+    "security": {
+      "name": "安检区",
+      "nameEn": "Security",
+      "color": "#D98C3F",
+      "public": true,
+      "order": 3
+    },
+    "airside_domestic": {
+      "name": "国内隔离区",
+      "nameEn": "Airside (Domestic)",
+      "color": "#3F8FD9",
+      "public": true,
+      "order": 4
+    },
+    "airside_intl": {
+      "name": "国际隔离区",
+      "nameEn": "Airside (International)",
+      "color": "#7B5ED9",
+      "public": true,
+      "order": 5
+    },
+    "airside_transit": {
+      "name": "国际中转隔离区",
+      "nameEn": "Airside (Transit)",
+      "color": "#B05EC9",
+      "public": true,
+      "order": 6
+    },
+    "staff": {
+      "name": "工作人员区",
+      "nameEn": "Staff only",
+      "color": "#5A5A5A",
+      "public": false,
+      "order": 7
+    },
+    "restricted": {
+      "name": "禁止进入",
+      "nameEn": "Restricted",
+      "color": "#3A3A3A",
+      "public": false,
+      "order": 8
+    }
+  },
+  "zoneRules": {
+    "_comment": "允许的 zone 跨越方式。校验器用这张表判定「隔离区泄漏」：两个不同 zone 的可通行面如果直接相邻，或用了表外的连接件类型跨越，即为 ERROR。",
+    "_direction": "★ 这是有向的。landside → airside_domestic 必须过安检；airside_domestic → landside 是到达出口，单向自由通行。反过来放行就等于没安检。",
+    "allowedTransitions": [
+      {
+        "from": "landside",
+        "to": "airside_domestic",
+        "via": [
+          "security"
+        ],
+        "note": "国内出发安检"
+      },
+      {
+        "from": "landside",
+        "to": "airside_intl",
+        "via": [
+          "security",
+          "immigration",
+          "customs"
+        ],
+        "note": "国际出发：安检 + 出境边检"
+      },
+      {
+        "from": "landside",
+        "to": "transit",
+        "via": [
+          "security",
+          "transfer_desk"
+        ],
+        "note": "中转旅客进入中转区"
+      },
+      {
+        "from": "airside_domestic",
+        "to": "landside",
+        "via": [
+          "exit"
+        ],
+        "note": "★ 国内到达：单向出口，无需查验。只能这个方向，反向就是隔离区泄漏"
+      },
+      {
+        "from": "airside_intl",
+        "to": "landside",
+        "via": [
+          "immigration",
+          "customs",
+          "quarantine"
+        ],
+        "note": "国际到达：入境边检 + 海关"
+      },
+      {
+        "from": "transit",
+        "to": "airside_domestic",
+        "via": [
+          "security",
+          "transfer_desk"
+        ],
+        "note": "中转国内：中转安检"
+      },
+      {
+        "from": "transit",
+        "to": "airside_intl",
+        "via": [
+          "security",
+          "transfer_desk",
+          "immigration"
+        ],
+        "note": "中转国际：出境边检"
+      },
+      {
+        "from": "airside_domestic",
+        "to": "transit",
+        "via": [
+          "transfer_desk"
+        ],
+        "note": "国内转国际：回到中转区"
+      },
+      {
+        "from": "airside_intl",
+        "to": "transit",
+        "via": [
+          "transfer_desk",
+          "immigration"
+        ],
+        "note": "国际转国际"
+      },
+      {
+        "from": "airside_transit",
+        "to": "transit",
+        "via": [
+          "transfer_desk"
+        ],
+        "note": "中转区内部"
+      }
+    ]
+  },
+  "connectorTypes": {
+    "_comment": "连接件类型。horizontal=true 表示同层连接（如步行道），false 表示跨层或跨区。",
+    "escalator": {
+      "name": "扶梯",
+      "nameEn": "Escalator",
+      "horizontal": false,
+      "accessible": false,
+      "alignTolerance": 3,
+      "category": "vertical"
+    },
+    "elevator": {
+      "name": "电梯",
+      "nameEn": "Elevator",
+      "horizontal": false,
+      "accessible": true,
+      "alignTolerance": 1.5,
+      "category": "vertical"
+    },
+    "stairs": {
+      "name": "楼梯",
+      "nameEn": "Stairs",
+      "horizontal": false,
+      "accessible": false,
+      "alignTolerance": 2,
+      "category": "vertical"
+    },
+    "travelator": {
+      "name": "自动步道",
+      "nameEn": "Travelator",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 5,
+      "category": "horizontal"
+    },
+    "ramp": {
+      "name": "坡道",
+      "nameEn": "Ramp",
+      "horizontal": false,
+      "accessible": true,
+      "alignTolerance": 3,
+      "category": "vertical"
+    },
+    "apm": {
+      "name": "捷运",
+      "nameEn": "APM",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 50,
+      "category": "transit"
+    },
+    "shuttle": {
+      "name": "摆渡车",
+      "nameEn": "Shuttle bus",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "transit"
+    },
+    "train": {
+      "name": "轨道",
+      "nameEn": "Rail",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "transit"
+    },
+    "security": {
+      "name": "安检",
+      "nameEn": "Security",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": true,
+      "_oneWay": "★ 查验类通道天然单向。默认双向的话，旅客会被规划出「倒着走回安检外面」的路线"
+    },
+    "immigration": {
+      "name": "边检",
+      "nameEn": "Immigration",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": true
+    },
+    "customs": {
+      "name": "海关",
+      "nameEn": "Customs",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": true
+    },
+    "quarantine": {
+      "name": "检验检疫",
+      "nameEn": "Quarantine",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": true
+    },
+    "transfer_desk": {
+      "name": "中转柜台",
+      "nameEn": "Transfer desk",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": false,
+      "_oneWay": "柜台是走过去办事，不是单向通道 —— 两端都能走"
+    },
+    "exit": {
+      "name": "到达出口",
+      "nameEn": "Arrival exit",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process",
+      "oneWay": true
+    },
+    "boarding": {
+      "name": "登机口",
+      "nameEn": "Boarding gate",
+      "horizontal": true,
+      "accessible": true,
+      "alignTolerance": 200,
+      "category": "process"
+    }
+  },
+  "timeModel": {
+    "_comment": "★ 全部为占位示意值，必须用实测数据校准。-- 秒 --",
+    "walkSpeed": {
+      "default": 1.25,
+      "withLuggage": 1,
+      "wheelchair": 0.9,
+      "elderly": 0.95,
+      "withChildren": 0.9,
+      "rushing": 1.6
+    },
+    "connectorTime": {
+      "escalator": {
+        "base": 3,
+        "perLevel": 10,
+        "note": "含进出扶梯时间"
+      },
+      "elevator": {
+        "base": 8,
+        "wait": 45,
+        "perLevel": 8,
+        "note": "wait 为平均等待，P90 建议取 90s"
+      },
+      "stairs": {
+        "base": 2,
+        "perLevel": 15
+      },
+      "travelator": {
+        "base": 3,
+        "speed": 0.75
+      },
+      "ramp": {
+        "base": 2,
+        "perLevel": 20
+      },
+      "apm": {
+        "base": 60,
+        "wait": 120,
+        "perRide": 180
+      },
+      "shuttle": {
+        "base": 60,
+        "wait": 300,
+        "perRide": 600
+      },
+      "train": {
+        "base": 60,
+        "wait": 240,
+        "perRide": 480
+      }
+    },
+    "processTime": {
+      "security": {
+        "wait": 480,
+        "waitPeak": 1080,
+        "service": 60,
+        "perLane": 12
+      },
+      "immigration": {
+        "wait": 300,
+        "waitPeak": 900,
+        "service": 45
+      },
+      "customs": {
+        "wait": 60,
+        "service": 30
+      },
+      "quarantine": {
+        "wait": 30,
+        "service": 30
+      },
+      "transfer_desk": {
+        "wait": 120,
+        "service": 180
+      },
+      "checkin": {
+        "wait": 300,
+        "service": 180
+      },
+      "baggage_drop": {
+        "wait": 180,
+        "service": 120
+      },
+      "baggage_claim": {
+        "wait": 900,
+        "service": 0,
+        "note": "抵达后到行李出来的平均等待，航班差异极大"
+      }
+    }
+  },
+  "scenarios": {
+    "_comment": "★ 两层规划器的上层：任务图。上层是业务规则（会变），下层是几何图（不会变）。required=false 的步骤由 when 条件决定是否插入。",
+    "dep-domestic": {
+      "name": "国内出发",
+      "nameEn": "Domestic Departure",
+      "zonePath": [
+        "landside",
+        "airside_domestic"
+      ],
+      "steps": [
+        {
+          "id": "enter",
+          "category": "entrance",
+          "required": true
+        },
+        {
+          "id": "checkin",
+          "category": "checkin",
+          "required": false,
+          "when": "!checkedIn || needBaggageDrop"
+        },
+        {
+          "id": "bagdrop",
+          "category": "baggage_drop",
+          "required": false,
+          "when": "needBaggageDrop"
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    },
+    "dep-international": {
+      "name": "国际出发",
+      "nameEn": "International Departure",
+      "zonePath": [
+        "landside",
+        "airside_intl"
+      ],
+      "steps": [
+        {
+          "id": "enter",
+          "category": "entrance",
+          "required": true
+        },
+        {
+          "id": "checkin",
+          "category": "checkin",
+          "required": false,
+          "when": "!checkedIn || needBaggageDrop"
+        },
+        {
+          "id": "bagdrop",
+          "category": "baggage_drop",
+          "required": false,
+          "when": "needBaggageDrop"
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "immigration",
+          "category": "immigration",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    },
+    "arr-domestic": {
+      "name": "国内到达",
+      "nameEn": "Domestic Arrival",
+      "zonePath": [
+        "airside_domestic",
+        "landside"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "baggage_claim",
+          "category": "baggage_claim",
+          "required": false,
+          "when": "hasCheckedBaggage"
+        },
+        {
+          "id": "exit",
+          "category": "exit",
+          "required": true
+        }
+      ]
+    },
+    "arr-international": {
+      "name": "国际到达",
+      "nameEn": "International Arrival",
+      "zonePath": [
+        "airside_intl",
+        "landside"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "quarantine",
+          "category": "quarantine",
+          "required": false,
+          "when": "requiresQuarantine"
+        },
+        {
+          "id": "immigration",
+          "category": "immigration",
+          "required": true
+        },
+        {
+          "id": "baggage_claim",
+          "category": "baggage_claim",
+          "required": false,
+          "when": "hasCheckedBaggage"
+        },
+        {
+          "id": "customs",
+          "category": "customs",
+          "required": true
+        },
+        {
+          "id": "exit",
+          "category": "exit",
+          "required": true
+        }
+      ]
+    },
+    "transit-domestic-domestic": {
+      "name": "国内中转国内",
+      "nameEn": "Domestic to Domestic Transit",
+      "zonePath": [
+        "airside_domestic",
+        "transit",
+        "airside_domestic"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "transfer",
+          "category": "transfer_desk",
+          "required": false,
+          "when": "!hasBoardingPass"
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    },
+    "transit-international-domestic": {
+      "name": "国际中转国内（入境）",
+      "nameEn": "International to Domestic Transit",
+      "zonePath": [
+        "airside_intl",
+        "landside",
+        "airside_domestic"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "immigration",
+          "category": "immigration",
+          "required": true
+        },
+        {
+          "id": "baggage_claim",
+          "category": "baggage_claim",
+          "required": false,
+          "when": "hasCheckedBaggage"
+        },
+        {
+          "id": "customs",
+          "category": "customs",
+          "required": true
+        },
+        {
+          "id": "transfer",
+          "category": "transfer_desk",
+          "required": false,
+          "when": "!hasBoardingPass"
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    },
+    "transit-domestic-international": {
+      "name": "国内中转国际（出境）",
+      "nameEn": "Domestic to International Transit",
+      "zonePath": [
+        "airside_domestic",
+        "transit",
+        "airside_intl"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "transfer",
+          "category": "transfer_desk",
+          "required": false,
+          "when": "!hasBoardingPass"
+        },
+        {
+          "id": "immigration",
+          "category": "immigration",
+          "required": true
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    },
+    "transit-international-international": {
+      "name": "国际中转国际",
+      "nameEn": "International to International Transit",
+      "zonePath": [
+        "airside_intl",
+        "transit",
+        "airside_intl"
+      ],
+      "steps": [
+        {
+          "id": "arrive",
+          "category": "gate",
+          "required": true
+        },
+        {
+          "id": "transfer",
+          "category": "transfer_desk",
+          "required": true
+        },
+        {
+          "id": "security",
+          "category": "security",
+          "required": true
+        },
+        {
+          "id": "gate",
+          "category": "gate",
+          "required": true,
+          "dynamic": "boardingGate"
+        }
+      ]
+    }
+  },
+  "thresholds": {
+    "_comment": "校验阈值。校验器从 manifest 读取，不要硬编码在脚本里。",
+    "doorTolerance": 0.5,
+    "connectorEndpointTolerance": 1,
+    "polygonTouchTolerance": 0.05,
+    "minPolygonArea": 0.5,
+    "minAreaFacility": 1,
+    "anchorCountMin": 3,
+    "anchorResidualMax": 2,
+    "anchorScaleRange": [
+      0.9,
+      1.1
+    ],
+    "duplicateFacilityDistance": 1,
+    "pathOnRegionTolerance": 0.5,
+    "_pathOnRegionTolerance": "通行线采样点必须落在同层同 zone 的区域面内。0.5m 容忍贴着边界画的情况。",
+    "pathSampleStep": 2,
+    "connectorOnPathTolerance": 0.5,
+    "pathNearMissMin": 0.05,
+    "pathNearMissMax": 2,
+    "pathDanglingAnchorDistance": 15,
+    "_pathDanglingAnchorDistance": "悬空端点判定半径（米）。★ 要 ≥ 指廊半宽：指廊通常 28m 宽，中线到两侧登机口约 12~14m，阈值太小会把正常的指廊末端全报成悬空。",
+    "areaAttachTolerance": 1,
+    "_areaAttachTolerance": "★ 面状设施可达性：通行线必须吸附到它边缘的这个距离内。线画在区域里、房间画在区域外，两者在墙上相遇。",
+    "poiPathTolerance": 5,
+    "_poiPathTolerance": "★ 点状设施可达性：必须有通行线经过它这个距离内。设成 5m 意味着大指廊（28m 宽）需要给两侧登机口各拉一条支线 —— 编辑器有「一键生成支线」。",
+    "verticalGroupTolerance": 0.05,
+    "_verticalGroupTolerance": "★ 同一个 verticalGroup 的各层成员，坐标必须一致到这个容差内。这是整个模型里唯一「跨楼层同一个位置」的地方 —— 对不上，3D 里的垂直路径就是斜的。",
+    "nodeMergeTolerance": 0.5,
+    "pathTouchTolerance": 0.02,
+    "_pathTouchToleranceWhy": "端点离另一条通行线多近算「接上了」，会在这里生成路口。必须和【编辑器坐标精度】对齐：坐标存 2 位小数（1 厘米），所以这个值要比 1 厘米大一档，取 2 厘米。实测所有端点里，吸附产生的偏差全在 2 厘米内（669 处），2~20 厘米这一段是空的 —— 没有自然情况落在这里，阈值卡得正好。★ 如果以后改坐标精度（比如存 3 位小数），这个值要跟着调。"
+  },
+  "facilityCategories": {
+    "_comment": "设施类别。点状设施（登机口、饮水）和面状设施（店铺、安检）共用这一张表 —— 领域上是同一种东西，只是几何不同。",
+    "_principle": [
+      "★ 只有「影响寻路语义 / 搜索意图 / 图例符号」的差别才单独建类。",
+      "  同一类东西的细分（零售 vs 免税 vs 便利店、ATM vs 银行）交给【名字 + fields】，不要造类。",
+      "  原 65 个类已合并成 36 个。"
+    ],
+    "_why": "每个类下面的 _why 说明了它为什么值得单独存在。",
+    "checkin": {
+      "name": "值机柜台",
+      "nameEn": "Check-in",
+      "group": "process",
+      "icon": "counter",
+      "routeable": true,
+      "_why": "旅客靠「A 岛」「CA」找柜台，字母编号和航司必须结构化",
+      "fields": [
+        {
+          "key": "counterLetter",
+          "label": "字母编号",
+          "type": "string",
+          "required": true,
+          "pattern": "^[A-Z]{1,3}$",
+          "index": true,
+          "placeholder": "A",
+          "hint": "值机岛/柜台的字母编号，例如 A、B、H。"
+        },
+        {
+          "key": "airline",
+          "label": "航空公司",
+          "type": "airline",
+          "required": true,
+          "index": true,
+          "hint": "这个柜台办哪家航司。填中文全称，编辑器会从航司表给建议。"
+        },
+        {
+          "key": "airlineCode",
+          "label": "航司代码",
+          "type": "string",
+          "required": true,
+          "pattern": "^[A-Z0-9]{2,3}$",
+          "index": true,
+          "placeholder": "CA",
+          "hint": "两字母 IATA 代码（CA / MU / CZ…）。搜索大小写不敏感。"
+        }
+      ]
+    },
+    "self_checkin": {
+      "name": "自助值机区",
+      "nameEn": "Self check-in",
+      "group": "process",
+      "icon": "kiosk",
+      "routeable": true,
+      "_why": "国内航班通用，不绑定航司 —— 所以【一个必填字段都没有】。这与「值机柜台」正好相反：柜台是某家航司的，必须标明字母编号和航司。面状（一整片自助机区）和点状（一台机器）都可以，几何决定，类别不区分。",
+      "fields": [
+        {
+          "key": "kiosks",
+          "label": "自助机数量",
+          "type": "number",
+          "index": false,
+          "hint": "可选。一排机器填总数即可。"
+        },
+        {
+          "key": "airlines",
+          "label": "限定航司",
+          "type": "airline",
+          "index": true,
+          "hint": "留空＝国内航班通用（默认）。只有确实只服务特定航司时才填。"
+        }
+      ]
+    },
+    "baggage_drop": {
+      "name": "行李托运",
+      "nameEn": "Baggage drop",
+      "group": "process",
+      "icon": "bag",
+      "routeable": true,
+      "_why": "含超规行李 —— 超规只是名字不同，流程完全一样"
+    },
+    "security": {
+      "name": "安检",
+      "nameEn": "Security",
+      "group": "process",
+      "icon": "security",
+      "routeable": true,
+      "_why": "★ 隔离区的分界。做成「可穿过的面状设施」（properties.through = true）：所有接到它边缘上的通行线互相连通，跨区只能经它"
+    },
+    "immigration": {
+      "name": "边检",
+      "nameEn": "Immigration",
+      "group": "process",
+      "icon": "passport",
+      "routeable": true,
+      "_why": "同上，也是门"
+    },
+    "customs": {
+      "name": "海关",
+      "nameEn": "Customs",
+      "group": "process",
+      "icon": "customs",
+      "routeable": true,
+      "_why": "同上，也是门"
+    },
+    "quarantine": {
+      "name": "检验检疫",
+      "nameEn": "Quarantine",
+      "group": "process",
+      "icon": "medical",
+      "routeable": true
+    },
+    "gate": {
+      "name": "登机口",
+      "nameEn": "Gate",
+      "group": "process",
+      "icon": "gate",
+      "routeable": true,
+      "fields": [
+        {
+          "key": "gateNo",
+          "label": "登机口编号",
+          "type": "string",
+          "index": true,
+          "required": true,
+          "placeholder": "E42",
+          "hint": "就填编号本身（E42），不用写「登机口」三个字 —— 那是类别名，地图上、搜索里都会自动带上。"
+        },
+        {
+          "key": "airline",
+          "label": "航空公司",
+          "type": "airline",
+          "index": true,
+          "hint": "常用航司，可多家用 / 分隔"
+        },
+        {
+          "key": "destinations",
+          "label": "目的地",
+          "type": "string",
+          "index": true,
+          "hint": "多个用 / 分隔"
+        },
+        {
+          "key": "boardingTime",
+          "label": "登机时间",
+          "type": "string",
+          "placeholder": "起飞前 40 分钟"
+        }
+      ],
+      "_why": "旅客找登机口靠的就是【编号】。原来把编号塞在 name 里写成「E42登机口」，导致：编号没法单独参与搜索排序、地图上会画出「E42登机口」这么长一串、而且「登机口」三个字是类别名，重复 25 遍纯属噪音。现在编号是独立字段，名字留空 —— 地图上只画 E42。",
+      "labelKey": "gateNo",
+      "_labelKeyWhy": "这个类别的\"显示名\"就是某个字段的值，不是 name。地图标签、搜索结果、信息卡标题统一走 labelKey，这样以后再有别的类别（比如下机口）也是加一行配置，不用改代码。"
+    },
+    "arrival_gate": {
+      "name": "下机口",
+      "nameEn": "Arrival gate",
+      "group": "process",
+      "icon": "gate",
+      "routeable": true,
+      "_why": "到达旅客下飞机进楼的那个口。★ 和「登机口」分开，不是同一个东西：出发时旅客在登机口【等】并由此上飞机，到达时在下机口【进】楼然后被导向行李提取/出口。物理上常常是同一组廊桥，但旅客看到的指示、走的方向、关联的信息都不同 ——登机口报的是目的地和登机时间，下机口要报的是出发地和对应的行李转盘。面状（一片下机区）和点状（一个口）都可以。",
+      "fields": [
+        {
+          "key": "airline",
+          "label": "航空公司",
+          "type": "airline",
+          "index": true,
+          "hint": "停靠这里的航司，可多家用 / 分隔"
+        },
+        {
+          "key": "origins",
+          "label": "出发地",
+          "type": "string",
+          "index": true,
+          "hint": "航班从哪来，多个用 / 分隔。旅客找接机口时会搜这个"
+        },
+        {
+          "key": "baggageCarousel",
+          "label": "行李转盘",
+          "type": "string",
+          "index": true,
+          "hint": "这个口出来的旅客去哪个转盘取行李，例如「12 号」"
+        }
+      ]
+    },
+    "transfer_desk": {
+      "name": "中转柜台",
+      "nameEn": "Transfer desk",
+      "group": "process",
+      "icon": "transfer",
+      "routeable": true
+    },
+    "baggage_claim": {
+      "name": "行李提取",
+      "nameEn": "Baggage claim",
+      "group": "process",
+      "icon": "baggage",
+      "routeable": true
+    },
+    "domestic_exit": {
+      "name": "国内出口",
+      "nameEn": "Domestic exit",
+      "group": "process",
+      "icon": "exit",
+      "routeable": true,
+      "through": true,
+      "_why": "国内到达旅客从隔离区回到公共区的那道口（行李转盘之后）。它和「出入口 entrance_exit」不是一回事：那是航站楼对外的门，这是隔离区对公共区的【单向关卡】。through: true —— 接入它边缘的通行线彼此相通，寻路可以穿过。",
+      "fields": [
+        {
+          "key": "baggageCarousel",
+          "label": "行李转盘",
+          "type": "string",
+          "index": true,
+          "hint": "这个口对应哪个转盘"
+        }
+      ]
+    },
+    "intl_exit": {
+      "name": "国际出口",
+      "nameEn": "International exit",
+      "group": "process",
+      "icon": "exit",
+      "routeable": true,
+      "through": true,
+      "_why": "国际到达旅客从国际隔离区回到公共区的那道口。按规则，国际隔离区 → 公共区要【先过海关、再过出口】，所以这一道口通常紧挨在海关之后。",
+      "fields": [
+        {
+          "key": "baggageCarousel",
+          "label": "行李转盘",
+          "type": "string",
+          "index": true,
+          "hint": "这个口对应哪个转盘"
+        },
+        {
+          "key": "customsDesk",
+          "label": "海关通道",
+          "type": "string",
+          "index": true,
+          "hint": "同组的报关/无申报通道标识"
+        }
+      ]
+    },
+    "restroom": {
+      "name": "卫生间",
+      "nameEn": "Restroom",
+      "group": "facility",
+      "icon": "wc",
+      "routeable": true,
+      "_why": "无障碍卫生间合并进来了 —— 用「类别」字段区分男/女/无障碍。原来靠【名字】区分（\"女卫生间\"），结果 17 个女卫生间全叫同一个名字，既看不出在哪一层哪一侧，也没法按类别搜索。名字是给\"这一个\"用的，类别是给\"这一类\"用的，两者不能混。",
+      "fields": [
+        {
+          "key": "restroomType",
+          "label": "类型",
+          "type": "choice",
+          "index": true,
+          "required": true,
+          "options": [
+            {
+              "value": "male",
+              "label": "男"
+            },
+            {
+              "value": "female",
+              "label": "女"
+            },
+            {
+              "value": "accessible",
+              "label": "无障碍"
+            },
+            {
+              "value": "family",
+              "label": "家庭/母婴"
+            }
+          ],
+          "hint": "点按钮选。再点一下取消。选完这个设施就叫「男卫生间」「女卫生间」。",
+          "titlePrefix": true
+        },
+        {
+          "key": "hasBabyRoom",
+          "label": "含母婴室",
+          "type": "boolean",
+          "index": true
+        }
+      ],
+      "_titlePrefixWhy": "titlePrefix 表示「这个字段的值拼在类别名【前面】」：选了 male，显示就是「男卫生间」，而不是「卫生间 male」。与 labelKey 的区别：labelKey 是【替代】名字（登机口 → E42，类别在前），titlePrefix 是【修饰】类别（男 + 卫生间）。两者都是配置，不在代码里写死类别。"
+    },
+    "nursing": {
+      "name": "母婴室",
+      "nameEn": "Nursing room",
+      "group": "facility",
+      "icon": "baby",
+      "routeable": true
+    },
+    "water": {
+      "name": "饮水",
+      "nameEn": "Water",
+      "group": "facility",
+      "icon": "water",
+      "routeable": true
+    },
+    "charging": {
+      "name": "充电",
+      "nameEn": "Charging",
+      "group": "facility",
+      "icon": "plug",
+      "routeable": true
+    },
+    "left_luggage": {
+      "name": "行李寄存",
+      "nameEn": "Left luggage",
+      "group": "facility",
+      "icon": "locker",
+      "routeable": true
+    },
+    "facility": {
+      "name": "其他设施",
+      "nameEn": "Other facility",
+      "group": "facility",
+      "icon": "dot",
+      "routeable": true,
+      "_why": "兜底"
+    },
+    "service_desk": {
+      "name": "服务台",
+      "nameEn": "Service desk",
+      "group": "service",
+      "icon": "info",
+      "routeable": true,
+      "_why": "问询/售票改签/邮政/电话卡/办公/WiFi 全部合并 —— 细分放 fields.service",
+      "fields": [
+        {
+          "key": "service",
+          "label": "服务内容",
+          "type": "string",
+          "index": true
+        }
+      ]
+    },
+    "police": {
+      "name": "警务",
+      "nameEn": "Police",
+      "group": "service",
+      "icon": "police",
+      "routeable": true
+    },
+    "lost_found": {
+      "name": "失物招领",
+      "nameEn": "Lost & found",
+      "group": "service",
+      "icon": "lost",
+      "routeable": true
+    },
+    "staff": {
+      "name": "工作人员区",
+      "nameEn": "Staff only",
+      "group": "service",
+      "icon": "staff",
+      "routeable": false
+    },
+    "lounge": {
+      "name": "休息室",
+      "nameEn": "Lounge",
+      "group": "rest",
+      "icon": "lounge",
+      "routeable": true,
+      "_why": "航司休息室和付费休息室合并 —— 差别放 fields.access",
+      "fields": [
+        {
+          "key": "access",
+          "label": "准入方式",
+          "type": "string",
+          "index": true
+        },
+        {
+          "key": "airline",
+          "label": "所属航司",
+          "type": "airline",
+          "index": true
+        }
+      ]
+    },
+    "seating": {
+      "name": "座椅区",
+      "nameEn": "Seating",
+      "group": "rest",
+      "icon": "seat",
+      "routeable": true
+    },
+    "sleep": {
+      "name": "过夜休息",
+      "nameEn": "Sleep",
+      "group": "rest",
+      "icon": "bed",
+      "routeable": true,
+      "fields": [
+        {
+          "key": "kind",
+          "label": "类型",
+          "type": "string",
+          "index": true,
+          "hint": "计时休息 / 酒店 / 淋浴"
+        }
+      ]
+    },
+    "kids_area": {
+      "name": "儿童区",
+      "nameEn": "Kids area",
+      "group": "rest",
+      "icon": "kids",
+      "routeable": true
+    },
+    "prayer_room": {
+      "name": "祈祷室",
+      "nameEn": "Prayer room",
+      "group": "rest",
+      "icon": "prayer",
+      "routeable": true
+    },
+    "smoking": {
+      "name": "吸烟室",
+      "nameEn": "Smoking room",
+      "group": "rest",
+      "icon": "smoking",
+      "routeable": true
+    },
+    "commerce": {
+      "name": "商业",
+      "nameEn": "Commercial",
+      "group": "commerce",
+      "icon": "shop",
+      "routeable": true,
+      "_why": "★ 零售/免税/便利店/特产/书店/花店/餐饮/快餐/咖啡/酒吧 全部合成一个。旅客搜的是「星巴克」而不是「咖啡类」",
+      "fields": [
+        {
+          "key": "kind",
+          "label": "业态",
+          "type": "string",
+          "required": true,
+          "index": true,
+          "placeholder": "零售",
+          "hint": "零售 / 餐饮 / 咖啡 / 免税 / 服务"
+        },
+        {
+          "key": "brand",
+          "label": "品牌",
+          "type": "string",
+          "index": true
+        },
+        {
+          "key": "goods",
+          "label": "主营",
+          "type": "string",
+          "index": true
+        },
+        {
+          "key": "dutyFree",
+          "label": "免税",
+          "type": "boolean",
+          "index": true
+        },
+        {
+          "key": "seats",
+          "label": "座位数",
+          "type": "number"
+        }
+      ]
+    },
+    "finance": {
+      "name": "金融",
+      "nameEn": "Finance",
+      "group": "commerce",
+      "icon": "money",
+      "routeable": true,
+      "fields": [
+        {
+          "key": "kind",
+          "label": "类型",
+          "type": "string",
+          "index": true,
+          "hint": "ATM / 银行 / 外币兑换 / 退税"
+        }
+      ]
+    },
+    "entrance": {
+      "name": "入口",
+      "nameEn": "Entrance",
+      "group": "transport",
+      "icon": "enter",
+      "routeable": true
+    },
+    "exit": {
+      "name": "出口",
+      "nameEn": "Exit",
+      "group": "transport",
+      "icon": "exit",
+      "routeable": true
+    },
+    "entrance_exit": {
+      "name": "出入口",
+      "nameEn": "Entrance / Exit",
+      "group": "transport",
+      "icon": "door",
+      "routeable": true,
+      "_why": "既进也出的门。★ 和「入口」「出口」并存，不是替换它们 —— 单向的门必须分清方向：出发找入口、到达找出口，是两条不同的信息，scenario 里也分别引用（dep 用 entrance、arr 用 exit）。只有确实双向通行的门才用这一类。面状（一整片门厅）和点状（一扇门）都可以，几何决定，类别不区分。",
+      "fields": [
+        {
+          "key": "to",
+          "label": "通向",
+          "type": "string",
+          "index": true,
+          "hint": "可选。门外是什么，例如「停车楼」「出租车候客区」「轨道交通」。"
+        },
+        {
+          "key": "openHours",
+          "label": "开放时间",
+          "type": "string",
+          "index": false,
+          "hint": "可选。有些门不是 24 小时的。"
+        }
+      ]
+    },
+    "ground_transport": {
+      "name": "地面交通",
+      "nameEn": "Ground transport",
+      "group": "transport",
+      "icon": "transport",
+      "routeable": true,
+      "fields": [
+        {
+          "key": "mode",
+          "label": "方式",
+          "type": "string",
+          "required": true,
+          "index": true,
+          "placeholder": "出租车"
+        }
+      ]
+    },
+    "medical": {
+      "name": "医疗点",
+      "nameEn": "Medical",
+      "group": "medical",
+      "icon": "medical",
+      "routeable": true
+    },
+    "pharmacy": {
+      "name": "药店",
+      "nameEn": "Pharmacy",
+      "group": "medical",
+      "icon": "pharmacy",
+      "routeable": true
+    },
+    "elevator": {
+      "name": "电梯",
+      "nameEn": "Elevator",
+      "group": "vertical",
+      "icon": "elevator",
+      "routeable": true,
+      "vertical": {
+        "wait": 1.2,
+        "perLevel": 0.25,
+        "accessible": true
+      }
+    },
+    "escalator": {
+      "name": "扶梯",
+      "nameEn": "Escalator",
+      "group": "vertical",
+      "icon": "escalator",
+      "routeable": true,
+      "vertical": {
+        "wait": 0.1,
+        "perLevel": 0.3,
+        "accessible": false
+      }
+    },
+    "stairs": {
+      "name": "楼梯",
+      "nameEn": "Stairs",
+      "group": "vertical",
+      "icon": "stairs",
+      "routeable": true,
+      "vertical": {
+        "wait": 0,
+        "perLevel": 0.45,
+        "accessible": false
+      }
+    },
+    "ramp": {
+      "name": "坡道",
+      "nameEn": "Ramp",
+      "group": "vertical",
+      "icon": "ramp",
+      "routeable": true,
+      "vertical": {
+        "wait": 0,
+        "perLevel": 0.9,
+        "accessible": true
+      }
+    },
+    "landscape": {
+      "name": "景观",
+      "nameEn": "Landscape",
+      "group": "facility",
+      "icon": "tree",
+      "routeable": true,
+      "_why": "室内的观赏性构筑物：绿植墙、室内水景、艺术装置、主题雕塑。和「其他设施」的区别是它有明确的观赏属性，旅客会专门去找/拍照；旅客能走到它旁边（routeable），但它不是服务点。面状（一整片景观区）和点状（一个装置）都可以，几何决定。",
+      "fields": [
+        {
+          "key": "kind",
+          "label": "类型",
+          "type": "string",
+          "index": true,
+          "hint": "绿植 / 水景 / 艺术装置 / 雕塑 …"
+        },
+        {
+          "key": "photogenic",
+          "label": "打卡点",
+          "type": "boolean",
+          "index": true,
+          "hint": "值得专门去看的，标上"
+        }
+      ]
+    }
+  },
+  "airlines": {
+    "_comment": "航司代码表。用在 category.fields 里 type=airline 的字段上，给编辑器做下拉建议 —— 不是白名单，填表外的值也允许（有些小航司/包机不在表里）。",
+    "CA": {
+      "name": "中国国际航空",
+      "nameEn": "Air China"
+    },
+    "MU": {
+      "name": "中国东方航空",
+      "nameEn": "China Eastern"
+    },
+    "CZ": {
+      "name": "中国南方航空",
+      "nameEn": "China Southern"
+    },
+    "HU": {
+      "name": "海南航空",
+      "nameEn": "Hainan Airlines"
+    },
+    "ZH": {
+      "name": "深圳航空",
+      "nameEn": "Shenzhen Airlines"
+    },
+    "SC": {
+      "name": "山东航空",
+      "nameEn": "Shandong Airlines"
+    },
+    "MF": {
+      "name": "厦门航空",
+      "nameEn": "XiamenAir"
+    },
+    "3U": {
+      "name": "四川航空",
+      "nameEn": "Sichuan Airlines"
+    },
+    "9C": {
+      "name": "春秋航空",
+      "nameEn": "Spring Airlines"
+    },
+    "HO": {
+      "name": "吉祥航空",
+      "nameEn": "Juneyao Air"
+    },
+    "KN": {
+      "name": "中国联合航空",
+      "nameEn": "China United"
+    },
+    "JD": {
+      "name": "首都航空",
+      "nameEn": "Capital Airlines"
+    },
+    "GS": {
+      "name": "天津航空",
+      "nameEn": "Tianjin Airlines"
+    },
+    "NS": {
+      "name": "河北航空",
+      "nameEn": "Hebei Airlines"
+    },
+    "BA": {
+      "name": "英国航空",
+      "nameEn": "British Airways"
+    },
+    "AF": {
+      "name": "法国航空",
+      "nameEn": "Air France"
+    },
+    "KL": {
+      "name": "荷兰皇家航空",
+      "nameEn": "KLM"
+    },
+    "LH": {
+      "name": "汉莎航空",
+      "nameEn": "Lufthansa"
+    },
+    "NH": {
+      "name": "全日空",
+      "nameEn": "ANA"
+    },
+    "JL": {
+      "name": "日本航空",
+      "nameEn": "Japan Airlines"
+    },
+    "KE": {
+      "name": "大韩航空",
+      "nameEn": "Korean Air"
+    },
+    "SQ": {
+      "name": "新加坡航空",
+      "nameEn": "Singapore Airlines"
+    },
+    "EK": {
+      "name": "阿联酋航空",
+      "nameEn": "Emirates"
+    },
+    "SU": {
+      "name": "俄罗斯航空",
+      "nameEn": "Aeroflot"
+    }
+  },
+  "_categoryMerge": {
+    "retail": "commerce",
+    "duty_free": "commerce",
+    "convenience": "commerce",
+    "souvenir": "commerce",
+    "bookstore": "commerce",
+    "florist": "commerce",
+    "dining": "commerce",
+    "fast_food": "commerce",
+    "cafe": "commerce",
+    "bar": "commerce",
+    "airline_lounge": "lounge",
+    "paid_lounge": "lounge",
+    "rest_area": "seating",
+    "sleep_pod": "sleep",
+    "hotel": "sleep",
+    "shower": "sleep",
+    "baggage_storage": "left_luggage",
+    "counter": "service_desk",
+    "office": "service_desk",
+    "postal": "service_desk",
+    "sim_card": "service_desk",
+    "ticketing": "service_desk",
+    "wifi": "service_desk",
+    "taxi": "ground_transport",
+    "bus": "ground_transport",
+    "rail": "ground_transport",
+    "parking": "ground_transport",
+    "car_rental": "ground_transport",
+    "atm": "finance",
+    "bank": "finance",
+    "tax_refund": "finance",
+    "oversize_baggage": "baggage_drop",
+    "accessible_restroom": "restroom",
+    "elevator_lobby": "elevator"
+  },
+  "zoneTransitions": {
+    "_why": "从一个隔离区走到另一个隔离区，【必须穿过哪些类别的设施】。这就是\"门\"的规则本身：不是\"能不能穿\"，而是\"必须穿哪一个\"。寻路时只允许穿过这些类别的门禁设施；穿完之后还会逐条核对，少穿一个就报出来，不会悄悄给出一条绕过去的路。",
+    "_order": "按 [from, to] 精确匹配，找不到就说明这两个区之间不该直接通行。",
+    "rules": [
+      {
+        "from": "landside",
+        "to": "airside_domestic",
+        "via": [
+          "security"
+        ],
+        "label": "公共区 → 国内隔离区"
+      },
+      {
+        "from": "landside",
+        "to": "airside_intl",
+        "via": [
+          "security",
+          "customs"
+        ],
+        "label": "公共区 → 国际隔离区"
+      },
+      {
+        "from": "airside_intl",
+        "to": "airside_domestic",
+        "via": [
+          "customs"
+        ],
+        "label": "国际隔离区 → 国内隔离区（中转入境）"
+      },
+      {
+        "from": "airside_domestic",
+        "to": "landside",
+        "via": [
+          "domestic_exit"
+        ],
+        "label": "国内隔离区 → 公共区（到达）"
+      },
+      {
+        "from": "airside_intl",
+        "to": "landside",
+        "via": [
+          "customs",
+          "intl_exit"
+        ],
+        "label": "国际隔离区 → 公共区（到达）"
+      },
+      {
+        "from": "airside_domestic",
+        "to": "airside_intl",
+        "via": [
+          "security",
+          "customs"
+        ],
+        "label": "国内隔离区 → 国际隔离区（中转出境）"
+      }
+    ],
+    "_sameZone": "同区之间【不允许穿过任何门禁设施】—— 没有理由在同一个区里过一次安检。"
+  }
+}

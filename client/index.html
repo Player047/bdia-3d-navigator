@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<title>大兴机场导航</title>
+
+<!--
+  ★ 字体：英文 Roboto、中文思源黑体（Google Fonts 上的名字是 Noto Sans SC）。
+    display=swap 让文字先用系统字体渲染，字体到了再换 —— 不会白屏等字体。
+
+  ★ 这是本客户端【唯一】的外部依赖。整个项目其余部分零依赖、可离线，
+    所以字体必须能优雅降级：下面 font-family 栈里 Google 字体后面跟着
+    系统字体，断网时自动用 PingFang SC / 微软雅黑，功能完全不受影响。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   Material 3 设计令牌
+
+   用的是 M3【基线配色方案】（baseline color scheme）—— 就是 Material 3
+   默认那套紫调，不是自己调的。深浅两套都是官方给的值。
+
+   命名严格照 M3 的 token 名：primary / on-primary / primary-container /
+   on-primary-container / surface / surface-container-{lowest..highest} /
+   on-surface / on-surface-variant / outline / outline-variant / error …
+
+   "on-X" 永远表示「画在 X 上的前景色」，这是 M3 的核心约定，
+   照它写就不用逐个去试对比度。
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  /* ---- 字体（英文 Roboto，中文思源黑体/Noto Sans SC）---- */
+  --font: "Roboto", "Noto Sans SC", "Source Han Sans SC", "PingFang SC",
+          "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* ---- M3 形状标度 ---- */
+  --shape-xs: 4px;
+  --shape-sm: 8px;
+  --shape-md: 12px;
+  --shape-lg: 16px;
+  --shape-xl: 28px;
+  --shape-full: 9999px;
+
+  /* ---- M3 状态层不透明度 ---- */
+  --state-hover: 0.08;
+  --state-focus: 0.10;
+  --state-press: 0.10;
+  --state-drag: 0.16;
+
+  /* ---- M3 动效 ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --dur-short: 150ms;
+  --dur-medium: 250ms;
+}
+
+/* ---- M3 深色（默认）---- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #D0BCFF;            --on-primary: #381E72;
+  --primary-container: #4F378B;  --on-primary-container: #EADDFF;
+  --secondary: #CCC2DC;          --on-secondary: #332D41;
+  --secondary-container: #4A4458;--on-secondary-container: #E8DEF8;
+  --tertiary: #EFB8C8;           --on-tertiary: #492532;
+  --tertiary-container: #633B48; --on-tertiary-container: #FFD8E4;
+  --error: #F2B8B5;              --on-error: #601410;
+  --error-container: #8C1D18;    --on-error-container: #F9DEDC;
+
+  --surface: #141218;
+  --surface-dim: #141218;
+  --surface-bright: #3B383E;
+  --surface-container-lowest: #0F0D13;
+  --surface-container-low: #1D1B20;
+  --surface-container: #211F26;
+  --surface-container-high: #2B2930;
+  --surface-container-highest: #36343B;
+  --on-surface: #E6E0E9;
+  --on-surface-variant: #CAC4D0;
+  --outline: #938F99;
+  --outline-variant: #49454F;
+  --scrim: #000000;
+
+  --inverse-surface: #E6E0E9;
+  --inverse-on-surface: #322F35;
+  --surface-tint: #D0BCFF;
+}
+
+/* ---- M3 浅色 ---- */
+[data-theme="light"] {
+  color-scheme: light;
+  --primary: #6750A4;            --on-primary: #FFFFFF;
+  --primary-container: #EADDFF;  --on-primary-container: #21005D;
+  --secondary: #625B71;          --on-secondary: #FFFFFF;
+  --secondary-container: #E8DEF8;--on-secondary-container: #1D192B;
+  --tertiary: #7D5260;           --on-tertiary: #FFFFFF;
+  --tertiary-container: #FFD8E4; --on-tertiary-container: #31111D;
+  --error: #B3261E;              --on-error: #FFFFFF;
+  --error-container: #F9DEDC;    --on-error-container: #410E0B;
+
+  --surface: #FEF7FF;
+  --surface-dim: #DED8E1;
+  --surface-bright: #FEF7FF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F7F2FA;
+  --surface-container: #F3EDF7;
+  --surface-container-high: #ECE6F0;
+  --surface-container-highest: #E6E0E9;
+  --on-surface: #1D1B20;
+  --on-surface-variant: #49454F;
+  --outline: #79747E;
+  --outline-variant: #CAC4D0;
+  --scrim: #000000;
+
+  --inverse-surface: #322F35;
+  --inverse-on-surface: #F5EFF7;
+  --surface-tint: #6750A4;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   M3 排版标度
+   display / headline / title / body / label 各 3 档，行高和字重照官方表。
+   ══════════════════════════════════════════════════════════════════ */
+.t-display-s  { font-size: 36px; line-height: 44px; font-weight: 400; letter-spacing: 0; }
+.t-headline-s { font-size: 24px; line-height: 32px; font-weight: 400; }
+.t-title-l    { font-size: 22px; line-height: 28px; font-weight: 400; }
+.t-title-m    { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: .15px; }
+.t-title-s    { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: .1px; }
+.t-body-l     { font-size: 16px; line-height: 24px; font-weight: 400; letter-spacing: .5px; }
+.t-body-m     { font-size: 14px; line-height: 20px; font-weight: 400; letter-spacing: .25px; }
+.t-body-s     { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: .4px; }
+.t-label-l    { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: .1px; }
+.t-label-m    { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: .5px; }
+.t-label-s    { font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: .5px; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font);
+  font-size: 14px; line-height: 20px; letter-spacing: .25px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button, input, select { font: inherit; color: inherit; }
+.hidden { display: none !important; }
+
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#stage { position: relative; flex: 1; min-height: 0; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+/* ══════════════════════════════════════════════════════════════════
+   M3 按钮
+
+   四种强调级别，照 M3 的用法：
+     filled          最高强调，一屏一个（开始导航 / 预览路线）
+     filled tonal    次高（设为起点/终点）
+     outlined        中等（重新选 / 清空）
+     text            最低（知道了 / 上一步）
+   状态层用 ::after 叠一层当前前景色的 8%/10%，这是 M3 的标准做法，
+   比改背景色更准（浅色深色都不跑偏）。
+   ══════════════════════════════════════════════════════════════════ */
+button {
+  position: relative; overflow: hidden;
+  border: none; cursor: pointer; white-space: nowrap;
+  border-radius: var(--shape-full);
+  padding: 10px 24px;
+  font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: .1px;
+  background: transparent; color: var(--primary);
+  transition: box-shadow var(--dur-short) var(--ease-standard),
+              background-color var(--dur-short) var(--ease-standard);
+}
+button::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: currentColor; opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-short) var(--ease-standard);
+}
+button:hover::after  { opacity: var(--state-hover); }
+button:focus-visible::after { opacity: var(--state-focus); }
+button:active::after { opacity: var(--state-press); }
+button:focus-visible { outline: 3px solid var(--secondary); outline-offset: 2px; }
+button:disabled { opacity: .38; cursor: not-allowed; }
+button:disabled::after { opacity: 0; }
+
+/* filled —— 最高强调 */
+button.primary {
+  background: var(--primary); color: var(--on-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 1px 3px 1px rgba(0,0,0,.15);
+}
+button.primary:hover { box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15); }
+button.primary::after { background: var(--on-primary); }
+
+/* filled tonal —— 次高 */
+button.tonal { background: var(--secondary-container); color: var(--on-secondary-container); }
+button.tonal::after { background: var(--on-secondary-container); }
+
+/* outlined —— 中等 */
+button.outlined { border: 1px solid var(--outline); color: var(--primary); }
+button.outlined::after { background: var(--primary); }
+
+/* 选中态（分段按钮 / 开关类）—— 用 filled tonal 的样子 */
+button.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+button.on::after { background: var(--on-secondary-container); }
+button.danger { color: var(--error); }
+button.danger::after { background: var(--error); }
+
+/* 图标按钮 —— M3 icon button，圆形，40×40 */
+button.icon {
+  width: 40px; height: 40px; padding: 0; border-radius: var(--shape-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   M3 顶栏（small top app bar）
+   ══════════════════════════════════════════════════════════════════ */
+#top {
+  display: flex; align-items: center; gap: 8px;
+  height: 64px; padding: 0 8px 0 16px;
+  background: var(--surface-container);
+  color: var(--on-surface);
+  flex: none;
+}
+#top .title { font-size: 22px; line-height: 28px; font-weight: 400; margin-right: 8px; }
+#top .spacer { flex: 1; }
+
+/*
+ * ══════════════════════════════════════════════════════════════════
+ * 品牌资源（PREZNT 系列）
+ *
+ * ★ 用 CSS mask，不用 <img src>。
+ *
+ *   原因：`currentColor` 在 <img> 引用的 SVG 里【不生效】。
+ *   外部 SVG 是独立的渲染上下文，拿不到父元素的 CSS color，
+ *   currentColor 只能回落到它自己的默认值 —— 黑色。
+ *   实测就是「深色模式下所有图标都是黑的」。
+ *
+ *   mask 的做法是把 SVG 当成一块【模板】，再用 background-color 填色：
+ *   颜色完全由 CSS 控制，和页面主题天然同步。
+ *   比内联 SVG 好在：文件仍然是独立文件，改图形不用动 HTML。
+ * ══════════════════════════════════════════════════════════════════
+ */
+.brand-title {
+  height: 30px; width: 232px;         /* 字标是横排的，给固定宽度 */
+  flex: none; margin-right: 12px;
+  background-color: var(--on-surface);
+  -webkit-mask: url(./assets/thumbnail.svg) no-repeat left center / contain;
+  mask: url(./assets/thumbnail.svg) no-repeat left center / contain;
+}
+
+.about-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px 0 10px; margin-right: 4px;
+  border-radius: var(--shape-full);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  font-size: 13px; font-weight: 500; letter-spacing: .3px;
+  transition: background-color var(--dur-short) var(--ease-standard),
+              color var(--dur-short) var(--ease-standard);
+}
+.about-btn::before {
+  content: ''; flex: none;
+  width: 17px; height: 17px;
+  background-color: currentColor;     /* ← 跟着按钮的文字色走 */
+  -webkit-mask: url(./assets/preznt-mark.svg) no-repeat center / contain;
+  mask: url(./assets/preznt-mark.svg) no-repeat center / contain;
+}
+.about-btn:hover {
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+  border-color: transparent;
+}
+
+/* ---- 右下角署名条 ---- */
+#credit {
+  position: absolute; right: 12px; bottom: 10px; z-index: 8;
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  border-radius: var(--shape-full);
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  /* 署名是"在场但不抢戏" —— 半透明，鼠标靠近才完全实 */
+  opacity: .72;
+  transition: opacity var(--dur-medium) var(--ease-standard);
+}
+#credit:hover { opacity: 1; }
+
+.credit-link { display: flex; align-items: center; color: inherit; text-decoration: none; }
+.credit-link:hover { color: var(--primary); }
+.credit-pre, .credit-dept {
+  display: block;
+  background-color: currentColor;
+}
+.credit-pre {
+  width: 92px; height: 14px;
+  -webkit-mask: url(./assets/preznt-production.svg) no-repeat left center / contain;
+  mask: url(./assets/preznt-production.svg) no-repeat left center / contain;
+}
+.credit-dept {
+  width: 76px; height: 17px;
+  -webkit-mask: url(./assets/transit-group.svg) no-repeat left center / contain;
+  mask: url(./assets/transit-group.svg) no-repeat left center / contain;
+}
+.credit-sep { width: 1px; height: 14px; background: var(--outline-variant); }
+.credit-copy { font-size: 11px; letter-spacing: .4px; white-space: nowrap; }
+
+/* 窄屏：署名缩到只留版权，标识藏起来（手机上放不下） */
+@media (max-width: 640px) {
+  .brand-title { height: 22px; width: 170px; margin-right: 8px; }
+  .about-btn { padding: 0 10px; height: 32px; }
+  .about-btn span { display: none; }        /* 只留图形标 */
+  #credit { gap: 8px; padding: 5px 10px; }
+  .credit-dept, .credit-sep { display: none; }
+  .credit-pre { width: 76px; height: 12px; }
+}
+
+/* M3 分段按钮（segmented button）*/
+.seg {
+  display: flex; border: 1px solid var(--outline);
+  border-radius: var(--shape-full); overflow: hidden; flex: none;
+}
+.seg button {
+  border-radius: 0; padding: 8px 20px; color: var(--on-surface);
+  background: transparent; font-size: 14px; font-weight: 500;
+}
+.seg button::after { background: var(--on-surface); }
+.seg button + button { border-left: 1px solid var(--outline); }
+.seg button.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+.seg button.on::after { background: var(--on-secondary-container); }
+
+/* ══════════════════════════════════════════════════════════════════
+   M3 卡片 / 浮层
+
+   M3 只有三种卡片：elevated / filled / outlined。
+   这里用 filled（surface-container-*）配 tonal elevation ——
+   深浅两套下都能自然浮起来，不靠阴影硬撑。
+   ══════════════════════════════════════════════════════════════════ */
+.panel {
+  position: absolute;
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  border-radius: var(--shape-lg);
+  box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 4px 12px 2px rgba(0,0,0,.12);
+}
+
+/* ---- 楼层选择：M3 chip ---- */
+#levels { left: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px;
+  padding: 8px; background: var(--surface-container); box-shadow: none; border: 1px solid var(--outline-variant); }
+#levels button {
+  padding: 8px 16px; font-size: 14px; font-weight: 500; text-align: left;
+  border-radius: var(--shape-sm); color: var(--on-surface-variant);
+}
+#levels button::after { background: var(--on-surface); }
+#levels button.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+/* ---- 视角切换 ---- */
+#viewModes { right: 12px; top: 12px; display: flex; flex-direction: column; gap: 4px;
+  padding: 8px; background: var(--surface-container); box-shadow: none; border: 1px solid var(--outline-variant); max-width: 190px;
+  /*
+   * ★ 必须压过左边的起终点卡片。
+   *   两者都是绝对定位的 .panel，而 #search 在 DOM 里排在后面 ——
+   *   不给 z-index 的话它就会盖住展开的视角菜单（手机上尤其明显）。
+   */
+  z-index: 20;
+}
+
+/*
+ * 折叠按钮：只在窄屏出现。
+ * 桌面屏幕够宽，菜单一直开着最好用 —— 让它消失只是让人多点一下。
+ */
+#btnViewToggle {
+  display: none;
+  position: absolute; right: 12px; top: 12px; z-index: 21;
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,.24), 0 4px 10px 2px rgba(0,0,0,.18);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   手机 / 窄屏
+   ══════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /*
+   * ★ 右边的视角菜单收进按钮里。
+   *   手机上它占了将近一半的宽度，而"切换视角"不是高频操作 ——
+   *   每次导航都摊在屏幕上是浪费。
+   */
+  #btnViewToggle { display: inline-flex; }
+  #viewModes {
+    right: 12px; top: 60px; max-width: 172px;
+    /* 默认收起；.open 才展开 */
+    display: none;
+  }
+  #viewModes.open {
+    display: flex;
+    animation: pop-in 180ms var(--ease-standard);
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(-6px) scale(.96); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* 左上角那列楼层按钮：手机上收窄、字号变小 */
+  #levels { left: 8px; top: 8px; padding: 5px; gap: 2px; }
+  #levels button { padding: 6px 11px; font-size: 12.5px; }
+
+  /*
+   * ★ 左边两张卡（起终点 / 路线预览）：整体收紧。
+   *   手机上宽度本来就紧张，原来的内边距和字号是按桌面定的，
+   *   照搬过来一行放不下几个字，卡片还占掉半屏。
+   */
+  #search { left: 8px; right: 8px; top: 8px; width: auto; padding: 10px 12px; }
+  #search .f { margin-bottom: 8px; }
+  #search .f label { font-size: 11px; margin-bottom: 2px; }
+  #search input { padding: 9px 12px; font-size: 13.5px; }
+  #search .acts { margin-top: 10px; gap: 6px; }
+  #search .acts button { padding: 9px 12px; font-size: 13px; }
+
+  #card {
+    left: 8px; right: 8px; width: auto; bottom: 10px;
+    padding: 12px 14px 14px;
+  }
+  #card .instr { font-size: 18px; line-height: 24px; }
+  #card .meta { font-size: 12px; line-height: 18px; margin-bottom: 10px; }
+  #card .acts button { padding: 9px 10px; font-size: 13px; }
+
+  /* 设施信息卡同样收紧 */
+  #info { left: 8px; right: 8px; width: auto; bottom: 10px; padding: 14px 16px 12px; }
+  #info h3 { font-size: 18px; line-height: 24px; }
+
+  /* 顶部栏：标题小一点，给分段按钮让地方 */
+  #top { height: 56px; padding: 0 8px; }
+  #top .title { font-size: 17px; margin-right: 4px; }
+  .seg button { padding: 7px 14px; font-size: 13px; }
+}
+#viewModes button {
+  padding: 8px 16px; font-size: 13px; text-align: left;
+  border-radius: var(--shape-sm); color: var(--on-surface-variant);
+}
+#viewModes button::after { background: var(--on-surface); }
+#viewModes button.on { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+/* ---- 步骤卡 / 预览卡 ---- */
+/*
+ * ★ 靠左，不居中。
+ *   中间是"路"经过的地方 —— 卡片摆在那儿最挡视野，
+ *   跨层预览时还正好压住竖线和两层楼板的交界处。
+ *   左边留给卡片、右边留给视角切换，中间整块让给地图。
+ *   132px 是让开左上角那列楼层按钮的宽度。
+ */
+#card {
+  left: 12px; transform: none; bottom: 20px;
+  width: min(500px, calc(100vw - 24px)); padding: 16px 20px 20px;
+}
+#card .row1 { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+#card .idx { font: 500 12px/16px var(--font-mono); color: var(--on-surface-variant); letter-spacing: .5px; }
+#card .instr { font-size: 22px; line-height: 28px; font-weight: 400; flex: 1; color: var(--on-surface); }
+#card .meta { font-size: 13px; line-height: 20px; color: var(--on-surface-variant); margin-bottom: 14px; white-space: pre-line; }
+#card .acts { display: flex; gap: 8px; }
+#card .acts button { flex: 1; }
+#card .prog { height: 4px; background: var(--surface-container-highest); border-radius: var(--shape-full); margin-bottom: 14px; overflow: hidden; }
+#card .prog i { display: block; height: 100%; background: var(--primary); border-radius: inherit; transition: width var(--dur-medium) var(--ease-standard); }
+
+/* ---- 搜索 / 起终点 ---- */
+/* ★ 同样靠左 —— 理由见上面 #card 那段 */
+#search {
+  left: 12px; transform: none; top: 12px;
+  width: min(480px, calc(100vw - 24px)); padding: 16px;
+  transition: left var(--dur-medium) var(--ease-standard),
+              top var(--dur-medium) var(--ease-standard),
+              width var(--dur-medium) var(--ease-standard),
+              padding var(--dur-medium) var(--ease-standard),
+              opacity var(--dur-medium) var(--ease-standard);
+}
+#search .f { margin-bottom: 12px; position: relative; }
+#search .f label {
+  display: block; font-size: 12px; line-height: 16px; font-weight: 500;
+  letter-spacing: .5px; color: var(--on-surface-variant); margin-bottom: 4px;
+}
+#search .acts { display: flex; gap: 8px; margin-top: 16px; }
+#search .acts button { flex: 1; }
+
+/*
+ * ★ 开始导航之后，起终点卡片让出中间，缩到左上角。
+ *   跟着走时画面中间是「路」，卡片挡在那儿最碍事；
+ *   但起终点得随时能看到，所以是挪边变小，不是隐藏。
+ */
+#search.compact {
+  left: 12px; top: 12px; transform: none;
+  width: min(232px, calc(100vw - 24px)); padding: 10px 12px;
+  background: var(--surface-container); opacity: .92;
+}
+#search.compact:hover { opacity: 1; }
+#search.compact .f { margin-bottom: 6px; }
+#search.compact .f label { font-size: 10px; margin-bottom: 2px; }
+#search.compact .acts { margin-top: 8px; gap: 6px; }
+#search.compact .acts button { padding: 6px 10px; font-size: 12px; }
+
+/* M3 输入框（filled text field）*/
+input, select {
+  width: 100%; border: none; outline: none;
+  background: var(--surface-container-highest);
+  color: var(--on-surface);
+  border-bottom: 1px solid var(--on-surface-variant);
+  border-radius: var(--shape-xs) var(--shape-xs) 0 0;
+  padding: 12px 16px; font-size: 14px; line-height: 20px;
+  transition: border-color var(--dur-short) var(--ease-standard),
+              background-color var(--dur-short) var(--ease-standard);
+}
+input:hover, select:hover { background: var(--surface-container-high); }
+input:focus, select:focus { border-bottom: 2px solid var(--primary); padding-bottom: 11px; }
+
+/*
+/*
+ * 搜索候选：卡片堆叠。
+ *
+ * ★ 设计意图：候选不是"一个列表"，而是【一叠候选卡片】。
+ *   所以容器本身不画面板 —— 那样一眼就是"列表"。
+ *   每条自己是一张浮起的卡：独立圆角、独立阴影、彼此留缝。
+ *
+ *   三层细节让它显得精致，而不是"排在一起"：
+ *     ① 错开入场 —— 每条延迟 26ms，从上往下依次滑入。
+ *        一次性全出现很"硬"，错开之后有节奏。
+ *     ② 悬停抬升 —— 上移 2px + 阴影加深 + 左侧强调条展开。
+ *        静态不变的东西没有"可点"的暗示。
+ *     ③ 命中字高亮 —— 你输入的几个字在名字里被标出来，
+ *        一眼就知道"这条为什么会出现在这里"。
+ */
+.sug {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 5;
+  max-height: 300px; overflow-y: auto; overflow-x: hidden;
+  margin-top: 8px; padding: 6px;
+  /*
+   * ★ 容器必须是【实底】的。
+   *   之前设成 transparent（想着"卡片自己浮着更像一叠卡"）——
+   *   结果卡片之间的缝隙直接露出地图：底下是密集的通行线和设施点，
+   *   缝里全是噪点，读起来又花又累。
+   *   现在容器是一块实心面板，卡片用更亮的 surface-container-high，
+   *   靠【明度差】浮起来 —— 既保留"一叠卡"的感觉，缝隙也是干净底色。
+   */
+  background: var(--surface-container);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-lg);
+  box-shadow: 0 2px 6px rgba(0,0,0,.28), 0 8px 24px 4px rgba(0,0,0,.24);
+  scrollbar-width: thin;
+}
+.sug::-webkit-scrollbar { width: 8px; }
+.sug::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 4px; }
+
+.sug div {
+  position: relative;
+  display: flex; gap: 10px; align-items: center;
+  padding: 11px 14px; margin-bottom: 4px;
+  cursor: pointer;
+  border-radius: var(--shape-md);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  /* 容器已经给了整体层次，卡片自己的阴影收轻一点，免得糊成一团 */
+  box-shadow: 0 1px 2px rgba(0,0,0,.16);
+  transition: transform 140ms var(--ease-standard),
+              box-shadow 140ms var(--ease-standard),
+              background-color 140ms var(--ease-standard);
+  animation: sug-in 260ms var(--ease-standard) backwards;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+/* 最后一条不留多余的下边距，否则面板底部会多出一截空 */
+.sug div:last-child { margin-bottom: 0; }
+@keyframes sug-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.sug div:hover {
+  transform: translateY(-2px);
+  background: var(--surface-container-highest);
+  box-shadow: 0 2px 4px rgba(0,0,0,.24), 0 6px 16px 3px rgba(0,0,0,.20);
+}
+.sug div::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0;
+  transform: translateY(-50%);
+  border-radius: 0 2px 2px 0;
+  background: var(--primary);
+  transition: height 160ms var(--ease-standard);
+}
+.sug div:hover::before { height: 62%; }
+
+.sug div > span:first-child {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 14px; line-height: 20px;
+}
+.sug mark { background: transparent; color: var(--primary); font-weight: 600; padding: 0; }
+
+.sug .lv, .sug .cat {
+  flex: none; font-size: 11px; line-height: 16px; letter-spacing: .4px;
+  padding: 2px 8px; border-radius: var(--shape-full);
+}
+.sug .lv { background: var(--surface-container-highest); color: var(--on-surface-variant); }
+.sug .cat { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+.sug .empty {
+  display: block; padding: 14px; text-align: center;
+  font-size: 13px; color: var(--on-surface-variant);
+  background: var(--surface-container); box-shadow: none;
+  animation: none;
+}
+.sug .empty::before { display: none; }
+
+/* ---- 设施信息卡 ---- */
+#info { left: 12px; bottom: 20px; width: min(340px, calc(100vw - 24px)); padding: 20px 20px 16px; }
+#info h3 { font-size: 22px; line-height: 28px; font-weight: 400; margin-bottom: 4px; }
+#info .cat { font-size: 12px; line-height: 16px; letter-spacing: .5px; color: var(--on-surface-variant); margin-bottom: 14px; }
+#info dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; line-height: 20px; }
+#info dt { color: var(--on-surface-variant); }
+#info dd { color: var(--on-surface); }
+#info .acts { display: flex; gap: 8px; margin-top: 18px; }
+#info .acts button { flex: 1; }
+#info .x { position: absolute; right: 8px; top: 8px; }
+#info .x::after { background: var(--on-surface); }
+
+/* ---- 提示条 ---- */
+#hint {
+  left: 50%; transform: translateX(-50%); bottom: 20px;
+  padding: 12px 16px; font-size: 13px; line-height: 20px;
+  color: var(--on-surface-variant);
+  background: var(--surface-container); box-shadow: none;
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--shape-md);
+  max-width: calc(100vw - 24px);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   M3 Snackbar
+   ══════════════════════════════════════════════════════════════════ */
+#toast {
+  position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%);
+  z-index: 50; display: flex; flex-direction: column; gap: 8px; align-items: center;
+  pointer-events: none;
+}
+.toast {
+  background: var(--inverse-surface); color: var(--inverse-on-surface);
+  border-radius: var(--shape-xs); padding: 14px 16px;
+  font-size: 14px; line-height: 20px; letter-spacing: .25px;
+  max-width: min(560px, 70vw);
+  box-shadow: 0 1px 3px rgba(0,0,0,.24), 0 4px 12px 2px rgba(0,0,0,.16);
+  animation: snack-in var(--dur-medium) var(--ease-emphasized);
+}
+.toast.err { background: var(--error-container); color: var(--on-error-container); }
+.toast.ok  { background: var(--inverse-surface); color: var(--inverse-on-surface); }
+@keyframes snack-in { from { opacity: 0; transform: translateY(10px); } }
+
+/* ══════════════════════════════════════════════════════════════════
+   启动失败层
+   ══════════════════════════════════════════════════════════════════ */
+#boot { position: fixed; inset: 0; display: none; place-items: center;
+  background: var(--surface); z-index: 200; padding: 24px; }
+#boot.on { display: grid; }
+#boot .card { max-width: 640px; line-height: 1.75; }
+#boot h1 { font-size: 24px; line-height: 32px; font-weight: 400; color: var(--error); margin-bottom: 16px; }
+#boot code {
+  font-family: var(--font-mono); background: var(--surface-container-highest);
+  border-radius: var(--shape-xs); padding: 2px 8px; color: var(--primary);
+}
+#boot pre {
+  font-family: var(--font-mono); background: var(--surface-container-lowest);
+  border-radius: var(--shape-sm); padding: 16px; margin: 12px 0;
+  overflow-x: auto; font-size: 13px; color: var(--on-surface); line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <!--
+      标题：BDIA 3D Navigator 字标。
+      ★ 不是 <img> —— 图形由 CSS mask 画出来（见样式表里的说明：
+        currentColor 在 <img> 引用的 SVG 里不生效）。
+    -->
+    <span class="brand-title" role="img" aria-label="BDIA 3D Navigator"></span>
+    <div class="seg" id="modeSeg"></div>
+    <span class="spacer"></span>
+    <!--
+      关于：PREZNT 图形标 + 「关于」，新标签打开官网（不打断当前导航）。
+      图形标是 .about-btn::before 用 mask 画的，这里不需要 img。
+    -->
+    <a id="btnAbout" class="about-btn" href="https://player047.site/PREZNT/index.html"
+       target="_blank" rel="noopener" title="关于 · PREZNT Atelier">
+      <span>关于</span>
+    </a>
+    <button class="icon" id="btnTheme" title="切换深浅色">◐</button>
+    <button class="icon" id="btnHelp" title="操作说明">?</button>
+  </div>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div class="panel" id="levels"></div>
+    <div class="panel" id="viewModes"></div>
+    <!--
+      手机上视角菜单折叠成一个按钮，点了才展开。
+      桌面端这个按钮不显示（菜单一直开着，没必要多点一下）。
+    -->
+    <button id="btnViewToggle" class="icon" title="视角设置">⋯</button>
+    <div class="panel hidden" id="search"></div>
+    <div class="panel hidden" id="card"></div>
+    <div class="panel hidden" id="info"></div>
+    <div class="panel hidden" id="hint"></div>
+
+    <!--
+      右下角署名条。
+      放这里是因为：左侧是操作卡（起点/终点/步骤），右上是视角菜单，
+      地图中央要留白 —— 右下是唯一"永远不挡事"的角落。
+      全是 currentColor 的 SVG，深浅模式自动适配。
+    -->
+    <div id="credit">
+      <a class="credit-link" href="https://player047.site/PREZNT/index.html"
+         target="_blank" rel="noopener" title="PREZNT Production">
+        <span class="credit-pre" role="img" aria-label="PREZNT Production"></span>
+      </a>
+      <span class="credit-sep"></span>
+      <span class="credit-dept" role="img" aria-label="Transit Group"></span>
+      <span class="credit-copy">© PREZNT Atelier 2026</span>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="boot"><div class="card" id="bootCard"></div></div>
+
+<script>
+/*
+ * 主题：默认跟随系统，用户手动切过就记住。
+ * ★ 必须在 body 渲染【之前】同步执行，否则会先闪一下深色再变浅色。
+ */
+(function () {
+  try {
+    var saved = localStorage.getItem('bdia-theme');
+    var sys = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', saved || sys);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+
+/* 启动守卫：module 脚本挂了要能说清原因，而不是白屏。 */
+(function () {
+  var shown = false;
+  function fail(title, html) {
+    if (shown) return; shown = true;
+    document.getElementById('bootCard').innerHTML = '<h1>' + title + '</h1>' + html;
+    document.getElementById('boot').classList.add('on');
+  }
+  window.__navFail = fail;
+  if (location.protocol === 'file:') {
+    fail('不能直接用文件打开', '<p>浏览器会以 CORS 为由拒绝加载 ES 模块。</p>'
+      + '<p>请用本地服务打开：<pre>cd projects/bdia-nav\\nnpm run editor</pre>'
+      + '然后访问 <code>http://127.0.0.1:5173/client/</code></p>');
+  }
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target.tagName === 'SCRIPT') {
+      fail('脚本加载失败', '<p>' + (e.target.src || '') + '</p>'
+        + '<p>如果刚刚在改代码，多半是加载到了改到一半的版本 —— <b>刷新一次</b>就好。</p>'
+        + '<p>刷新还不行的话，打开 F12 看 Network 里哪个请求是红的。</p>');
+    }
+  }, true);
+  setTimeout(function () { if (!window.__navBooted) fail('页面没能启动', '<p>脚本 4 秒内没有跑完。打开 F12 看控制台。</p>'); }, 4000);
+})();
+</script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

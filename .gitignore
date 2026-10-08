@@ -1,0 +1,19 @@
+# 校验器 / 编辑器自测的临时目录
+.selftest/
+.editor-tmp/
+
+# 编译产物（由 data/source 生成，不进 Git）
+dist/
+
+# 依赖
+node_modules/
+
+# ★ 平面图底图：有版权，只留本机不进 Git。
+#    但保留 README，让目录结构完整。
+plans/*
+!plans/README.md
+
+# ★ 保存前的自动快照（editor-server.mjs 每次写盘前整目录拷一份）。
+#    这是本机的后悔药，不是源数据 —— 单份约 1.5MB × 最近 20 份，
+#    提交上去只会让仓库膨胀，而且真正的历史应该由 Git 自己记。
+data/.backup/

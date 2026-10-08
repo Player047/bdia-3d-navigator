@@ -1,0 +1,720 @@
+{
+  "version": 2,
+  "levels": {
+    "L3F": {
+      "activeId": "m10",
+      "maps": [
+        {
+          "image": "3m.jpg",
+          "label": "3m",
+          "mPerPx": 0.5571,
+          "rotationDeg": 0,
+          "originPx": [
+            0,
+            0
+          ],
+          "nudge": [
+            -598.5127832871949,
+            805.883646532216
+          ],
+          "opacity": 0.35,
+          "visible": true,
+          "locked": false,
+          "id": "m1"
+        },
+        {
+          "image": "3-1.jpg",
+          "label": "3-1",
+          "mPerPx": 0.1106,
+          "rotationDeg": 0.5,
+          "originPx": [
+            172.84990958408662,
+            60.75949367088643
+          ],
+          "nudge": [
+            -92.54533856229307,
+            25.75854697029291
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m2"
+        },
+        {
+          "image": "3-2.jpg",
+          "label": "3-2",
+          "mPerPx": 0.1109,
+          "rotationDeg": 0.5,
+          "originPx": [
+            -884.0613165013533,
+            274.1208295761953
+          ],
+          "nudge": [
+            -180.09265434993569,
+            -232.67304063121048
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m3"
+        },
+        {
+          "image": "3-3.jpg",
+          "label": "3-3",
+          "mPerPx": 0.1115,
+          "rotationDeg": 0.5,
+          "originPx": [
+            -7325.617937219731,
+            -120.53811659192797
+          ],
+          "nudge": [
+            -883.767370682236,
+            -335.7176840962256
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m4"
+        },
+        {
+          "image": "3-4.jpg",
+          "label": "3-4",
+          "mPerPx": 0.0964,
+          "rotationDeg": 0,
+          "originPx": [
+            -7677.634854771784,
+            122.82157676348544
+          ],
+          "nudge": [
+            -1001.1769469270976,
+            258.3629763596785
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m5"
+        },
+        {
+          "image": "3-5.jpg",
+          "label": "3-5",
+          "mPerPx": 0.0965,
+          "rotationDeg": 0,
+          "originPx": [
+            -9126.143005181346,
+            175.75129533678773
+          ],
+          "nudge": [
+            -989.0592452344716,
+            259.4341077825195
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m6"
+        },
+        {
+          "image": "3-6.jpg",
+          "label": "3-6",
+          "mPerPx": 0.0965,
+          "rotationDeg": 0,
+          "originPx": [
+            -11898.165571616297,
+            0
+          ],
+          "nudge": [
+            -1121.0315825538644,
+            315.8574684389284
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m7"
+        },
+        {
+          "image": "3-a.jpg",
+          "label": "3-a",
+          "mPerPx": 0.0855,
+          "rotationDeg": 0,
+          "originPx": [
+            -92.43508771929783,
+            -14364.444444444442
+          ],
+          "nudge": [
+            222.36517753455587,
+            1194.5334576360788
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m8"
+        },
+        {
+          "image": "3-b.jpg",
+          "label": "3-b",
+          "mPerPx": 0.0854,
+          "rotationDeg": 0,
+          "originPx": [
+            827.8875878220139,
+            -14.988290398126537
+          ],
+          "nudge": [
+            169.38240257653854,
+            -5.185040526319142
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m9"
+        },
+        {
+          "image": "3-c.jpg",
+          "label": "3-c",
+          "mPerPx": 0.124,
+          "rotationDeg": 0,
+          "originPx": [
+            -6242.632258064515,
+            -175.48387096774195
+          ],
+          "nudge": [
+            -1140.3498770413803,
+            47.98351843349295
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m10"
+        }
+      ]
+    },
+    "L5F": {
+      "activeId": null,
+      "maps": []
+    },
+    "L4F": {
+      "activeId": null,
+      "maps": []
+    },
+    "L2F": {
+      "activeId": "m28",
+      "maps": [
+        {
+          "image": "2m.jpg",
+          "label": "2m",
+          "mPerPx": 0.5571,
+          "rotationDeg": 0,
+          "originPx": [
+            0,
+            0
+          ],
+          "nudge": [
+            -598.5127832871949,
+            805.883646532216
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m1"
+        },
+        {
+          "image": "2-1.jpg",
+          "label": "2-1",
+          "mPerPx": 0.0781,
+          "rotationDeg": 0,
+          "originPx": [
+            -10123.704849378513,
+            -405.6288722379127
+          ],
+          "nudge": [
+            -333.5914458053367,
+            -63.79202611706076
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m2"
+        },
+        {
+          "image": "2-2.jpg",
+          "label": "2-2",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            -2691.6658393027683,
+            4.107830551989991
+          ],
+          "nudge": [
+            199.6085676556396,
+            -86.99287292125615
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m3"
+        },
+        {
+          "image": "2-3.jpg",
+          "label": "2-3",
+          "mPerPx": 0.0778,
+          "rotationDeg": 0,
+          "originPx": [
+            -11627.19794344473,
+            49.357326478148735
+          ],
+          "nudge": [
+            -576.566333172102,
+            -50.21766188049895
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m4"
+        },
+        {
+          "image": "2-4.jpg",
+          "label": "2-4",
+          "mPerPx": 0.0775,
+          "rotationDeg": 0,
+          "originPx": [
+            -11661.181935483872,
+            -53.677419354838094
+          ],
+          "nudge": [
+            -663.6839032835376,
+            7.752629586163636
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m5"
+        },
+        {
+          "image": "2-5.jpg",
+          "label": "2-5",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            0,
+            8.2156611039793
+          ],
+          "nudge": [
+            40.87740258420722,
+            116.78154622383335
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m6"
+        },
+        {
+          "image": "2-6.jpg",
+          "label": "2-6",
+          "mPerPx": 0.0776,
+          "rotationDeg": 0,
+          "originPx": [
+            -11152.067010309278,
+            -197.9381443298962
+          ],
+          "nudge": [
+            -930.8415470876706,
+            -75.9419394027721
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m7"
+        },
+        {
+          "image": "2-7.jpg",
+          "label": "2-7",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            -30.161745827984394,
+            -94.48010269576343
+          ],
+          "nudge": [
+            -528.1411705279672,
+            -181.2722740913777
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m8"
+        },
+        {
+          "image": "2-8.jpg",
+          "label": "2-8",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            43.98455598455598,
+            304.76190476190413
+          ],
+          "nudge": [
+            -428.4418771282856,
+            -145.91624354484426
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m9"
+        },
+        {
+          "image": "2-9.jpg",
+          "label": "2-9",
+          "mPerPx": 0.0776,
+          "rotationDeg": 0,
+          "originPx": [
+            -11661.293814432987,
+            -17439.175257731957
+          ],
+          "nudge": [
+            -1221.9739617033313,
+            1312.421200705737
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m10"
+        },
+        {
+          "image": "2-10.jpg",
+          "label": "2-10",
+          "mPerPx": 0.0773,
+          "rotationDeg": 0,
+          "originPx": [
+            -551.2703751617075,
+            57.95601552393191
+          ],
+          "nudge": [
+            -266.57065426234595,
+            -4.460911381247314
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m11"
+        },
+        {
+          "image": "2-11.jpg",
+          "label": "2-11",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            327.1351351351349,
+            2077.7348777348775
+          ],
+          "nudge": [
+            -42.9554366194136,
+            -145.8280977318286
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m12"
+        },
+        {
+          "image": "2-12.jpg",
+          "label": "2-12",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            192.4324324324322,
+            280.0514800514793
+          ],
+          "nudge": [
+            95.0666253940938,
+            54.16675383113167
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m13"
+        },
+        {
+          "image": "2-14.jpg",
+          "label": "2-14",
+          "mPerPx": 0.0776,
+          "rotationDeg": 0,
+          "originPx": [
+            1212.5103092783504,
+            901.0309278350524
+          ],
+          "nudge": [
+            -92.1168944852366,
+            40.35615753064168
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m14"
+        },
+        {
+          "image": "2-15.jpg",
+          "label": "2-15",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            -31.61389961389932,
+            -119.43371943371879
+          ],
+          "nudge": [
+            -91.61446317206706,
+            136.2767735018779
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m15"
+        },
+        {
+          "image": "2-16.jpg",
+          "label": "2-16",
+          "mPerPx": 0.0774,
+          "rotationDeg": 0,
+          "originPx": [
+            -154.54263565891463,
+            -438.2428940568475
+          ],
+          "nudge": [
+            389.0321696878581,
+            512.0169668816277
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m16"
+        },
+        {
+          "image": "2-20.jpg",
+          "label": "2-20",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            -253.63286264441598,
+            16.431322207959056
+          ],
+          "nudge": [
+            14.621915167874462,
+            291.6219286481836
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m17"
+        },
+        {
+          "image": "2-17.jpg",
+          "label": "2-17",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            109.96138996139007,
+            65.8944658944654
+          ],
+          "nudge": [
+            296.0612388645218,
+            383.06861927348797
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m18"
+        },
+        {
+          "image": "2-18.jpg",
+          "label": "2-18",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            -11115.97432605905,
+            -673.6842105263165
+          ],
+          "nudge": [
+            -660.7078598109431,
+            392.87529873606763
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m19"
+        },
+        {
+          "image": "2-21.jpg",
+          "label": "2-21",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            111.33590733590732,
+            107.0785070785073
+          ],
+          "nudge": [
+            -27.069129618635692,
+            244.9595284591375
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m20"
+        },
+        {
+          "image": "2-22.jpg",
+          "label": "2-22",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            -130.57915057915034,
+            -41.18404118404078
+          ],
+          "nudge": [
+            -181.49821244667646,
+            237.58742527811373
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m21"
+        },
+        {
+          "image": "2-23.jpg",
+          "label": "2-23",
+          "mPerPx": 0.0775,
+          "rotationDeg": 0,
+          "originPx": [
+            -11720.438709677415,
+            82.58064516129062
+          ],
+          "nudge": [
+            -1148.0216378675286,
+            245.47959657124906
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m22"
+        },
+        {
+          "image": "2-19.jpg",
+          "label": "2-19",
+          "mPerPx": 0.0779,
+          "rotationDeg": 0,
+          "originPx": [
+            -5674.5211810012825,
+            -336.8421052631579
+          ],
+          "nudge": [
+            -298.4033606258069,
+            321.0931660773066
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m23"
+        },
+        {
+          "image": "2-24.jpg",
+          "label": "2-24",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            -9.621621621621898,
+            -24.71042471042483
+          ],
+          "nudge": [
+            -377.05635358549443,
+            269.0955157384275
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m24"
+        },
+        {
+          "image": "2-25.jpg",
+          "label": "2-25",
+          "mPerPx": 0.0775,
+          "rotationDeg": 0,
+          "originPx": [
+            436.84645161290337,
+            -912.5161290322576
+          ],
+          "nudge": [
+            -438.34076690500217,
+            376.44007959513476
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m25"
+        },
+        {
+          "image": "2-26.jpg",
+          "label": "2-26",
+          "mPerPx": 0.0775,
+          "rotationDeg": 0,
+          "originPx": [
+            -11443.44774193548,
+            243.6129032258068
+          ],
+          "nudge": [
+            -1489.5935174026108,
+            316.8168437637262
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m26"
+        },
+        {
+          "image": "2-28.jpg",
+          "label": "2-28",
+          "mPerPx": 0.0777,
+          "rotationDeg": 0,
+          "originPx": [
+            -207.5521235521228,
+            -242.9858429858428
+          ],
+          "nudge": [
+            -43.87088624652338,
+            -363.4603521848421
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m27"
+        },
+        {
+          "image": "2-29.jpg",
+          "label": "2-29",
+          "mPerPx": 0.0775,
+          "rotationDeg": 0,
+          "originPx": [
+            -12308.872258064517,
+            -6.193548387097375
+          ],
+          "nudge": [
+            -1000.217999874657,
+            -242.12209525755011
+          ],
+          "opacity": 0.65,
+          "visible": true,
+          "locked": false,
+          "id": "m28"
+        }
+      ]
+    },
+    "L1F": {
+      "activeId": null,
+      "maps": []
+    },
+    "B1": {
+      "activeId": null,
+      "maps": []
+    },
+    "B2": {
+      "activeId": null,
+      "maps": []
+    }
+  },
+  "_comment": "编辑器专用：每层的底图与像素→米校准参数。不参与导航计算。"
+}

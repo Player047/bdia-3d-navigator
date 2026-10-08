@@ -1,0 +1,13 @@
+{
+  "$schema": "../../schema/connectors.schema.json",
+  "_comment": "连接件：跨隔离区的边。跨层的电梯/扶梯/楼梯/坡道【不在这里】—— 它们是点状设施，见 facilities.geojson 的 verticalGroup。",
+  "_rule": [
+    "★ from / to 必须落在某条通行线上（容差 0.5m）—— 否则图会在这里断开",
+    "跨隔离区只能经连接件。两个区域的通行线之间【不应该】有直接相连的线",
+    "oneWay 由连接件类型决定：安检/边检/海关/检疫/出口是单向的",
+    "为什么跨区连接件是边而不是点：入口到出口有一段实际要走的排队区，这段距离要算进路径"
+  ],
+  "_example": true,
+  "type": "FeatureCollection",
+  "features": []
+}

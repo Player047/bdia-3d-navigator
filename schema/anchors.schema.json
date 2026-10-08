@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "anchors.json — 地理配准控制点",
+  "description": "把本地米制坐标映射到 WGS84。校验器拟合相似变换（缩放+旋转+平移）并检查残差、缩放因子、旋转角。",
+
+  "type": "object",
+  "required": ["version", "method", "origin", "controlPoints"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+    "_warning": { "type": "string" },
+    "version": { "const": 1 },
+    "method": { "const": "similarity", "description": "相似变换：缩放 + 旋转 + 平移（保角，不独立缩放两轴）" },
+    "origin": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } }
+    },
+    "controlPoints": {
+      "type": "array",
+      "minItems": 3,
+      "description": "★ 至少 3 个，建议 4~6 个并分散在四角。选平面图和卫星图上都能精确定位的点（建筑角点、指廊端点）。",
+      "items": {
+        "type": "object",
+        "required": ["id", "local", "wgs84"],
+        "properties": {
+          "id": { "type": "string" },
+          "local": {
+            "allOf": [{ "$ref": "./common.schema.json#/$defs/localPoint" }],
+            "description": "[x, y] = [东(米), 北(米)]"
+          },
+          "wgs84": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "number" },
+            "description": "★ [lon, lat] —— 经度在前！北京经度约 116、纬度约 39，写反了校验器会报 E_LONLAT_ORDER。"
+          },
+          "note": { "type": "string", "description": "这个点是怎么定出来的（卫星图角点 / 实测 / 官方坐标）" },
+          "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+        }
+      }
+    }
+  }
+}

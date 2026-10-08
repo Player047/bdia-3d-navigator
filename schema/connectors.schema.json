@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "连接件 connectors.geojson",
+  "description": "扶梯 / 电梯 / 楼梯 / 自动步道 / 安检 / 边检 / 中转柜台 / 到达出口。每个连接件是一条图边 from → to。geometry 用 Point 表示中点，仅用于渲染。",
+
+  "type": "object",
+  "required": ["type", "features"],
+  "properties": {
+    "type": { "const": "FeatureCollection" },
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "id", "geometry", "properties"],
+        "properties": {
+          "type": { "const": "Feature" },
+          "id": {
+            "type": "string",
+            "pattern": "^cn-[a-z0-9]+-[a-z0-9-]+$",
+            "description": "命名约定 cn-<类型缩写>-<楼层>-<序号>，例如 cn-esc-3f4f-n01 / cn-elev-3f4f-01 / cn-sec-3f-transit-a"
+          },
+          "geometry": {
+            "allOf": [{ "$ref": "./common.schema.json#/$defs/pointGeometry" }],
+            "description": "连接件中点，仅用于地图上放图标。真正的数据在 properties.from / to。"
+          },
+          "properties": {
+            "type": "object",
+            "required": ["connectorType", "name", "nameEn", "from", "to", "bidirectional"],
+            "patternProperties": { "^_": {} },
+            "additionalProperties": false,
+            "properties": {
+              "connectorType": {
+                "type": "string",
+                "description": "必须在 manifest.connectorTypes 中定义",
+                "enum": [
+                  "escalator", "elevator", "stairs", "travelator", "ramp",
+                  "apm", "shuttle", "train",
+                  "security", "immigration", "customs", "quarantine",
+                  "transfer_desk", "exit", "boarding"
+                ]
+              },
+              "name": { "type": "string" },
+              "nameEn": { "type": "string" },
+
+              "from": { "$ref": "#/$defs/endpoint" },
+              "to": { "$ref": "#/$defs/endpoint" },
+
+              "bidirectional": {
+                "type": "boolean",
+                "description": "★ false = 只能 from → to 走。大兴大量扶梯是单向的，写成双向会规划出物理上过不去的路线。"
+              },
+              "direction": {
+                "type": "string",
+                "enum": ["up", "down", "both", "forward"],
+                "description": "相对 from → to 的物理方向，用于 UI 文案（「乘扶梯上行」）"
+              },
+              "schedule": {
+                "type": "array",
+                "description": "分时方向/运营时间。部分扶梯在特定时段反向运行。",
+                "items": {
+                  "type": "object",
+                  "required": ["hours"],
+                  "properties": {
+                    "hours": { "$ref": "./common.schema.json#/$defs/hours" },
+                    "direction": { "type": "string", "enum": ["up", "down", "both", "forward"] }
+                  }
+                }
+              },
+
+              "accessible": {
+                "type": "boolean",
+                "description": "★ 轮椅/婴儿车/大件行李能否使用。扶梯和楼梯是 false，电梯和坡道是 true。这是「无障碍路线」筛选的唯一依据。"
+              },
+              "travel_time": {
+                "type": "number",
+                "minimum": 0,
+                "description": "通过耗时（秒），不含排队。扶梯约 13s，楼梯约 16s。"
+              },
+              "wait_time": {
+                "type": "number",
+                "minimum": 0,
+                "default": 0,
+                "description": "平均等待（秒）。电梯 30~60s，安检数百秒。"
+              },
+              "lanes": { "type": ["integer", "null"], "minimum": 1, "description": "安检通道数，用于按客流估算等待时间" },
+              "capacity": { "type": ["integer", "null"], "minimum": 1, "description": "轿厢载客量" },
+              "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "endpoint": {
+      "type": "object",
+      "required": ["level", "x", "y", "zone"],
+      "additionalProperties": false,
+      "description": "★ 端点必须落在 (level, zone) 对应的某个可通行面内部。校验器逐个检查，不在里面就报 E_CONN_ENDPOINT_OUTSIDE。",
+      "properties": {
+        "level": { "$ref": "./common.schema.json#/$defs/levelId" },
+        "x": { "type": "number", "description": "东向米" },
+        "y": { "type": "number", "description": "北向米" },
+        "zone": { "$ref": "./common.schema.json#/$defs/zoneId" }
+      }
+    }
+  }
+}

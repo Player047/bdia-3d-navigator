@@ -1,0 +1,23 @@
+{
+  "name": "bdia-nav",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "北京大兴国际机场 3D 导航 —— 源数据、编辑器、客户端",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "editor": "node tools/editor-server.mjs",
+    "editor:no-open": "node tools/editor-server.mjs --no-open",
+    "validate": "node tools/validate.mjs",
+    "validate:strict": "node tools/validate.mjs --strict",
+    "validate:json": "node tools/validate.mjs --json",
+    "check": "node tools/validate.mjs --strict",
+    "test:model": "node tools/model-selftest.mjs",
+    "test:client": "node tools/client-selftest.mjs",
+    "test:vertical": "node tools/vertical-selftest.mjs",
+    "test:editor": "node tools/editor-pick.mjs && node tools/editor-e2e.mjs",
+    "test": "node tools/validate.mjs && npm run test:model && npm run test:client && npm run test:vertical && npm run test:editor"
+  }
+}

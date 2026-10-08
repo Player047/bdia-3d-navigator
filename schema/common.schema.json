@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bdia-nav.local/schema/common.schema.json",
+  "title": "公共类型定义",
+  "description": "其他 schema 通过 {\"$ref\": \"./common.schema.json#/$defs/xxx\"} 引用。",
+
+  "$defs": {
+    "localPoint": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" },
+      "description": "★ [x, y] = [东(米), 北(米)]。绝不是 [lon, lat]！"
+    },
+
+    "linearRing": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/localPoint" },
+      "description": "闭合环：首尾点必须相同，至少 4 个点，不得自交。"
+    },
+
+    "polygon": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/linearRing" },
+      "description": "面 = [外环, 洞1, 洞2, ...]"
+    },
+
+    "polygonGeometry": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "Polygon" },
+        "coordinates": { "$ref": "#/$defs/polygon" }
+      }
+    },
+
+    "pointGeometry": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "Point" },
+        "coordinates": { "$ref": "#/$defs/localPoint" }
+      }
+    },
+
+    "levelId": {
+      "type": "string",
+      "description": "楼层 id。必须存在于 manifest.levels。例如 L3F / L4F / L1F / B1"
+    },
+
+    "zoneId": {
+      "type": "string",
+      "enum": [
+        "landside", "transit", "security",
+        "airside_domestic", "airside_intl", "airside_transit",
+        "staff", "restricted"
+      ],
+      "description": "隔离区。跨 zone 只能通过 manifest.zoneRules 允许的连接件。"
+    },
+
+    "verified": {
+      "type": "boolean",
+      "description": "是否已对照官方平面图核实。false 的要素会在校验结果里被统计提示。"
+    },
+
+    "hours": {
+      "type": "string",
+      "pattern": "^([0-2][0-9]:[0-5][0-9]-[0-2][0-9]:[0-5][0-9]|00:00-24:00)$",
+      "description": "运营时间，如 \"06:00-22:00\" 或 \"00:00-24:00\""
+    },
+
+    "idPatternNote": {
+      "type": "string",
+      "description": "id 全局唯一，命名约定：<kind>-<level>-<序号>，例如 walk-3f-hall / room-3f-w1 / poi-gate-3f-c01 / cn-esc-3f4f-n01"
+    },
+
+    "metaKeys": {
+      "type": "object",
+      "patternProperties": {
+        "^_": { "description": "下划线开头的键是注释，加载器会忽略" }
+      }
+    }
+  }
+}

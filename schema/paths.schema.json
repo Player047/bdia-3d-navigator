@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "通行线 paths.geojson",
+  "description": "★ 唯一的寻路图。人画的折线网络 —— 不是可通行面，是「人应该沿着哪走」的那条线。",
+
+  "$comment": "端点、顶点、交叉点都会成为图节点；两条线交叉即连通（同一可通行面里，交叉点确实走得过去）。所以画图时不需要在路口手工打断，画一条长线穿过去就行。",
+
+  "type": "object",
+  "required": ["type", "features"],
+  "properties": {
+    "type": { "const": "FeatureCollection" },
+    "$schema": { "type": "string" },
+    "_comment": { "type": "string" },
+    "_rule": { "type": ["array", "string"] },
+    "_warning": { "type": "string" },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "id", "geometry", "properties"],
+        "properties": {
+          "type": { "const": "Feature" },
+          "id": {
+            "type": "string",
+            "pattern": "^path-[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "命名约定 path-<楼层>-<名称>，例如 path-3f-spine / path-3f-pier-n"
+          },
+          "geometry": {
+            "type": "object",
+            "required": ["type", "coordinates"],
+            "properties": {
+              "type": { "const": "LineString" },
+              "coordinates": {
+                "type": "array",
+                "minItems": 2,
+                "items": { "$ref": "./common.schema.json#/$defs/localPoint" },
+                "description": "★ 折线，首尾【不】相连。顶点就是图节点（弯折处是天然的挂点），所以顶点不要画得太密。"
+              }
+            }
+          },
+          "properties": {
+            "type": "object",
+            "required": ["level", "zone", "kind", "name", "nameEn"],
+            "patternProperties": { "^_": {} },
+            "additionalProperties": false,
+            "properties": {
+              "level": { "$ref": "./common.schema.json#/$defs/levelId" },
+              "zone": {
+                "allOf": [{ "$ref": "./common.schema.json#/$defs/zoneId" }],
+                "description": "★ 整条线只能有一个 zone。跨隔离区必须经连接件，不能直接拉一条线过去。"
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["spine", "corridor", "pier", "branch", "queue", "walkway", "staff"],
+                "description": "必须在 manifest.pathKinds 中定义"
+              },
+              "name": { "type": "string", "description": "中文名。会出现在转向指令里（「沿中央通道向前 60 米」），所以起得像人话" },
+              "nameEn": { "type": "string" },
+
+              "minWidth": {
+                "type": "number",
+                "minimum": 0,
+                "description": "这条通道的最小宽度（米）。用于无障碍/大件行李路线筛选。"
+              },
+              "accessible": { "type": "boolean", "default": true, "description": "轮椅/婴儿车/大件行李能否走" },
+              "bidirectional": { "type": "boolean", "default": true, "description": "是否双向。默认 true" },
+              "oneWay": { "type": "boolean", "description": "true 等价于 bidirectional: false" },
+
+              "speedFactor": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "default": 1,
+                "description": "速度系数。自动步道 1.6、上坡 0.8、楼梯 0.6。算耗时用：实际速度 = 步行速度 × speedFactor"
+              },
+              "hours": { "$ref": "./common.schema.json#/$defs/hours" },
+              "bridge": {
+                "type": "boolean",
+                "default": false,
+                "description": "★ true = 平面图上和别的线交叉，但【不连通】（跨层天桥、玻璃隔断）。罕用 —— 默认交叉即连通"
+              },
+              "verified": { "$ref": "./common.schema.json#/$defs/verified" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

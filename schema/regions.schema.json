@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bdia-nav.local/schema/regions.schema.json",
+  "title": "区域（隔离区标记）",
+  "description": "★ 区域【不参与寻路】。寻路完全由 paths.geojson 决定。区域有四个作用：① 承载 zone 语义（「这片是安检后的」本质上是面，线表达不了）② 判断通行线有没有画到区域外面去 ③ 判断设施落在哪个区域上 ④ 渲染着色。",
+  "type": "object",
+  "$ref": "./common.schema.json#/$defs/featureCollection",
+  "properties": {
+    "features": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "./common.schema.json#/$defs/feature" }],
+        "properties": {
+          "geometry": {
+            "oneOf": [
+              { "$ref": "./common.schema.json#/$defs/polygonGeometry" },
+              { "$ref": "./common.schema.json#/$defs/multiPolygonGeometry" }
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "required": ["level", "zone", "kind"],
+            "properties": {
+              "level": { "$ref": "./common.schema.json#/$defs/level" },
+              "zone": { "$ref": "./common.schema.json#/$defs/zone" },
+              "kind": {
+                "type": "string",
+                "description": "区域种类，取值见 manifest.regionKinds 的键。"
+              },
+              "name": { "type": "string" },
+              "nameEn": { "type": "string" },
+              "verified": { "$ref": "./common.schema.json#/$defs/verified" },
+              "_note": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
